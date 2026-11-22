@@ -1,0 +1,370 @@
+general:
+  dias_atras: 14
+  max_videos_por_canal: 2
+  max_duracion_minutos: 15
+  modo_busqueda: "canales" # "canales" (ahorra cuota) o "busqueda" (search.list por keyword)
+  idioma_resumen: "español"
+  excluir_shorts: true
+  max_shorts_segundos: 60
+  excluir_en_vivo: true
+  idiomas_subtitulos:
+    - "es"
+    - "es-419"
+    - "es-ES"
+    - "en"
+    - "en-US"
+    - "en-GB"
+
+rutas:
+  cache_db: "cache/youtube_cache.db"
+  salida_json: "output/resultados.json"
+  salida_md: "output/resultados.md"
+
+verticales:
+  fintech:
+    descripcion: "Servicios financieros digitales, banca abierta, pagos, activos digitales y regulación financiera"
+    keywords:
+      es:
+        - "fintech"
+        - "banca digital"
+        - "open banking"
+        - "pagos digitales"
+        - "neobanco"
+        - "criptomonedas"
+        - "stablecoin"
+        - "inteligencia artificial banca"
+        - "finanzas digitales"
+        - "blockchain"
+      en:
+        - "fintech"
+        - "digital banking"
+        - "open banking"
+        - "digital payments"
+        - "neobank"
+        - "stablecoin"
+        - "AI banking"
+        - "tokenization"
+        - "embedded finance"
+        - "central bank digital currency"
+    canales_es:
+      - { nombre: "Bloomberg Línea", handle: "@BloombergLinea" }
+      - { nombre: "Negocios TV", handle: "@NegociosTV" }
+      - { nombre: "Expansión", handle: "@ExpansionMX" }
+      - { nombre: "El Economista TV", handle: "@ElEconomistaTV" }
+      - { nombre: "Forbes Colombia", handle: "@ForbesColombia" }
+      - { nombre: "Portafolio", handle: "@PortafolioCo" }
+      - { nombre: "Valora Analitik", handle: "@ValoraAnalitik" }
+      - { nombre: "Cinco Días", handle: "@CincoDias" }
+      - { nombre: "El País", handle: "@elpais" }
+      - { nombre: "DW Español", handle: "@DWEspanol" }
+      - { nombre: "CNN en Español", handle: "@CNNEE" }
+      - { nombre: "Cronista TV", handle: "@ElCronistaComercial" }
+      - { nombre: "Platzi", handle: "@Platzi" }
+      - { nombre: "Xataka", handle: "@xataka" }
+      - { nombre: "Hipertextual", handle: "@hipertextual" }
+      - { nombre: "TEC de Monterrey", handle: "@tecdemonterrey" }
+      - { nombre: "Universidad Icesi", handle: "@UniversidadIcesi" }
+      - { nombre: "UdeA", handle: "@udea" }
+      - { nombre: "UTP Pereira", handle: "@UTPereira" }
+      - { nombre: "IICA Noticias", handle: "@IICAnoticias" }
+    canales_en:
+      - { nombre: "Bloomberg Television", handle: "@markets" }
+      - { nombre: "CNBC", handle: "@CNBC" }
+      - { nombre: "Financial Times", handle: "@FinancialTimes" }
+      - { nombre: "The Wall Street Journal", handle: "@wsj" }
+      - { nombre: "Reuters", handle: "@Reuters" }
+      - { nombre: "Yahoo Finance", handle: "@YahooFinance" }
+      - { nombre: "Forbes", handle: "@Forbes" }
+      - { nombre: "Business Insider", handle: "@BusinessInsider" }
+      - { nombre: "The Economist", handle: "@TheEconomist" }
+      - { nombre: "CNBC Television", handle: "@CNBCtelevision" }
+      - { nombre: "Fox Business", handle: "@FoxBusiness" }
+      - { nombre: "TechCrunch", handle: "@TechCrunch" }
+      - { nombre: "a16z", handle: "@a16z" }
+      - { nombre: "CoinDesk", handle: "@CoinDesk" }
+      - { nombre: "Cointelegraph", handle: "@Cointelegraph" }
+      - { nombre: "World Economic Forum", handle: "@wef" }
+      - { nombre: "OECD", handle: "@OECD" }
+      - { nombre: "MIT Technology Review", handle: "@technologyreview" }
+      - { nombre: "CNN", handle: "@CNN" }
+      - { nombre: "BBC News", handle: "@BBCNews" }
+
+  tecnologia:
+    descripcion: "Inteligencia artificial, cómputo avanzado, semiconductores, ciberseguridad y transformación digital"
+    keywords:
+      es:
+        - "inteligencia artificial"
+        - "IA generativa"
+        - "computación cuántica"
+        - "semiconductores"
+        - "ciberseguridad"
+        - "robótica"
+        - "automatización"
+        - "cloud computing"
+        - "startups"
+        - "innovación tecnológica"
+      en:
+        - "artificial intelligence"
+        - "generative AI"
+        - "quantum computing"
+        - "semiconductors"
+        - "cybersecurity"
+        - "robotics"
+        - "AI agents"
+        - "data centers"
+        - "cloud computing"
+        - "deep tech"
+    canales_es:
+      - { nombre: "Dot CSV", handle: "@DotCSV" }
+      - { nombre: "Xataka", handle: "@xataka" }
+      - { nombre: "Xataka TV", handle: "@XatakaTV" }
+      - { nombre: "Hipertextual", handle: "@hipertextual" }
+      - { nombre: "Genbeta", handle: "@genbeta" }
+      - { nombre: "Platzi", handle: "@Platzi" }
+      - { nombre: "EDteam", handle: "@EDteam" }
+      - { nombre: "MoureDev", handle: "@mouredev" }
+      - { nombre: "Midudev", handle: "@midudev" }
+      - { nombre: "Fazt", handle: "@FaztTech" }
+      - { nombre: "Nate Gentile", handle: "@NateGentile7" }
+      - { nombre: "Topes de Gama", handle: "@TopesdeGama" }
+      - { nombre: "Clipset", handle: "@clipset" }
+      - { nombre: "Enter.co", handle: "@ENTERCO" }
+      - { nombre: "MIT Technology Review Español", handle: "@MITTechReviewES" }
+      - { nombre: "DW Español", handle: "@DWEspanol" }
+      - { nombre: "CNN en Español", handle: "@CNNEE" }
+      - { nombre: "El País", handle: "@elpais" }
+      - { nombre: "TEC de Monterrey", handle: "@tecdemonterrey" }
+      - { nombre: "Universidad Icesi", handle: "@UniversidadIcesi" }
+    canales_en:
+      - { nombre: "Bloomberg Technology", handle: "@BloombergTechnology" }
+      - { nombre: "TechCrunch", handle: "@TechCrunch" }
+      - { nombre: "The Verge", handle: "@verge" }
+      - { nombre: "WIRED", handle: "@WIRED" }
+      - { nombre: "MIT Technology Review", handle: "@technologyreview" }
+      - { nombre: "CNET", handle: "@CNET" }
+      - { nombre: "Ars Technica", handle: "@ArsTechnica" }
+      - { nombre: "Marques Brownlee", handle: "@mkbhd" }
+      - { nombre: "Two Minute Papers", handle: "@TwoMinutePapers" }
+      - { nombre: "AI Explained", handle: "@aiexplained-official" }
+      - { nombre: "Matt Wolfe", handle: "@mreflow" }
+      - { nombre: "ColdFusion", handle: "@ColdFusion" }
+      - { nombre: "Fireship", handle: "@Fireship" }
+      - { nombre: "Lex Fridman", handle: "@lexfridman" }
+      - { nombre: "a16z", handle: "@a16z" }
+      - { nombre: "Y Combinator", handle: "@ycombinator" }
+      - { nombre: "NVIDIA", handle: "@NVIDIA" }
+      - { nombre: "Google DeepMind", handle: "@GoogleDeepMind" }
+      - { nombre: "OpenAI", handle: "@OpenAI" }
+      - { nombre: "CNBC", handle: "@CNBC" }
+
+  agrotech:
+    descripcion: "Agricultura de precisión, bioeconomía agropecuaria, sostenibilidad hídrica y seguridad alimentaria"
+    keywords:
+      es:
+        - "agrotech"
+        - "agricultura de precisión"
+        - "drones agricultura"
+        - "seguridad alimentaria"
+        - "agricultura inteligente"
+        - "riego inteligente"
+        - "agroindustria"
+        - "agricultura regenerativa"
+        - "biotecnología agrícola"
+        - "agro 4.0"
+      en:
+        - "agtech"
+        - "agrotech"
+        - "precision agriculture"
+        - "agricultural drones"
+        - "vertical farming"
+        - "food security"
+        - "smart farming"
+        - "autonomous tractors"
+        - "regenerative agriculture"
+        - "crop biotechnology"
+    canales_es:
+      - { nombre: "TvAgro", handle: "@TvAgro" }
+      - { nombre: "La Finca de Hoy", handle: "@LaFincadeHoy" }
+      - { nombre: "Agrotendencia TV", handle: "@AgrotendenciaTV" }
+      - { nombre: "Campo en Acción", handle: "@CampoenAccion" }
+      - { nombre: "Infocampo", handle: "@InfocampoWeb" }
+      - { nombre: "Bichos de Campo", handle: "@BichosdeCampo" }
+      - { nombre: "Agrofy News", handle: "@AgrofyNews" }
+      - { nombre: "Canal Rural", handle: "@CanalRuralAr" }
+      - { nombre: "INTAgro", handle: "@INTAgro" }
+      - { nombre: "AGROSAVIA TV", handle: "@AGROSAVIATV" }
+      - { nombre: "FEDEARROZ", handle: "@FedearrozColombia" }
+      - { nombre: "IICA Noticias", handle: "@IICAnoticias" }
+      - { nombre: "Agro Negocios", handle: "@AgronegociosCo" }
+      - { nombre: "Contexto Ganadero", handle: "@ContextoGanadero" }
+      - { nombre: "El Campo", handle: "@ElCampoTV" }
+      - { nombre: "DW Español", handle: "@DWEspanol" }
+      - { nombre: "Portafolio", handle: "@PortafolioCo" }
+      - { nombre: "UdeA", handle: "@udea" }
+      - { nombre: "UTP Pereira", handle: "@UTPereira" }
+      - { nombre: "Universidad Icesi", handle: "@UniversidadIcesi" }
+    canales_en:
+      - { nombre: "AgFunderNews", handle: "@AgFunder" }
+      - { nombre: "Future Farming", handle: "@FutureFarming" }
+      - { nombre: "PrecisionAg", handle: "@PrecisionAg" }
+      - { nombre: "John Deere", handle: "@JohnDeere" }
+      - { nombre: "Trimble Agriculture", handle: "@TrimbleAg" }
+      - { nombre: "DJI Agriculture", handle: "@DJIAgriculture" }
+      - { nombre: "Bayer Crop Science", handle: "@BayerCropScience" }
+      - { nombre: "Syngenta", handle: "@Syngenta" }
+      - { nombre: "Corteva Agriscience", handle: "@Corteva" }
+      - { nombre: "World Economic Forum", handle: "@wef" }
+      - { nombre: "OECD", handle: "@OECD" }
+      - { nombre: "CNBC", handle: "@CNBC" }
+      - { nombre: "Reuters", handle: "@Reuters" }
+      - { nombre: "The Economist", handle: "@TheEconomist" }
+      - { nombre: "WIRED", handle: "@WIRED" }
+      - { nombre: "MIT Technology Review", handle: "@technologyreview" }
+      - { nombre: "Successful Farming", handle: "@SuccessfulFarming" }
+      - { nombre: "Farm Journal", handle: "@AgWebFarmJournal" }
+      - { nombre: "Stanford University", handle: "@stanford" }
+      - { nombre: "Harvard University", handle: "@harvard" }
+
+  biotech:
+    descripcion: "Biotecnología aplicada, genómica, salud, bioeconomía y ciencias de la vida"
+    keywords:
+      es:
+        - "biotecnología"
+        - "biotech"
+        - "edición genética"
+        - "CRISPR"
+        - "medicina personalizada"
+        - "terapia génica"
+        - "biología sintética"
+        - "biofarmacéutica"
+        - "ensayos clínicos"
+        - "biomateriales"
+      en:
+        - "biotech"
+        - "biotechnology"
+        - "gene editing"
+        - "CRISPR"
+        - "gene therapy"
+        - "synthetic biology"
+        - "personalized medicine"
+        - "drug discovery"
+        - "mRNA"
+        - "longevity science"
+    canales_es:
+      - { nombre: "La Hiperactina", handle: "@Lahiperactina" }
+      - { nombre: "QuantumFracture", handle: "@QuantumFracture" }
+      - { nombre: "CdeCiencia", handle: "@CdeCiencia" }
+      - { nombre: "El Robot de Platón", handle: "@ElRobotdePlaton" }
+      - { nombre: "La Gata de Schrödinger", handle: "@LagatadeSchrodinger" }
+      - { nombre: "Date un Vlog", handle: "@DateunVlog" }
+      - { nombre: "Ciencia de Sofá", handle: "@CienciadeSofa" }
+      - { nombre: "CuriosaMente", handle: "@curiosamente" }
+      - { nombre: "Glóbulo Azul", handle: "@GlobuloAzul" }
+      - { nombre: "Medicina Clara", handle: "@MedicinaClara" }
+      - { nombre: "CSIC Comunicación", handle: "@CSICcomunicacion" }
+      - { nombre: "CONICET Dialoga", handle: "@CONICETDialoga" }
+      - { nombre: "TEC de Monterrey", handle: "@tecdemonterrey" }
+      - { nombre: "Universidad Icesi", handle: "@UniversidadIcesi" }
+      - { nombre: "UdeA", handle: "@udea" }
+      - { nombre: "UTP Pereira", handle: "@UTPereira" }
+      - { nombre: "DW Español", handle: "@DWEspanol" }
+      - { nombre: "CNN en Español", handle: "@CNNEE" }
+      - { nombre: "El País", handle: "@elpais" }
+      - { nombre: "Dot CSV", handle: "@DotCSV" }
+    canales_en:
+      - { nombre: "STAT News", handle: "@statnews" }
+      - { nombre: "Science Magazine", handle: "@ScienceMagazine" }
+      - { nombre: "MIT Technology Review", handle: "@technologyreview" }
+      - { nombre: "Broad Institute", handle: "@BroadInstitute" }
+      - { nombre: "Genentech", handle: "@Genentech" }
+      - { nombre: "Illumina", handle: "@Illumina" }
+      - { nombre: "Thermo Fisher Scientific", handle: "@thermofisher" }
+      - { nombre: "Mayo Clinic", handle: "@MayoClinic" }
+      - { nombre: "Johns Hopkins Medicine", handle: "@JohnsHopkinsMedicine" }
+      - { nombre: "NIH", handle: "@NIHOD" }
+      - { nombre: "Kurzgesagt", handle: "@kurzgesagt" }
+      - { nombre: "Veritasium", handle: "@veritasium" }
+      - { nombre: "SciShow", handle: "@SciShow" }
+      - { nombre: "a16z", handle: "@a16z" }
+      - { nombre: "Financial Times", handle: "@FinancialTimes" }
+      - { nombre: "The Economist", handle: "@TheEconomist" }
+      - { nombre: "WIRED", handle: "@WIRED" }
+      - { nombre: "CNBC", handle: "@CNBC" }
+      - { nombre: "Harvard University", handle: "@harvard" }
+      - { nombre: "Stanford University", handle: "@stanford" }
+
+  uniquindio_estatuto:
+    descripcion: "Foresight a medida para el Estatuto de Investigaciones de la Universidad del Quindío (horizonte 2040 / fase 2030)"
+    keywords:
+      es:
+        - "investigación"
+        - "universidad"
+        - "financiación"
+        - "evaluación"
+        - "integridad"
+        - "inteligencia artificial"
+        - "gobernanza"
+        - "transferencia"
+        - "territorio"
+        - "sostenibilidad"
+        - "café"
+        - "agua"
+        - "biodiversidad"
+        - "doctorado"
+      en:
+        - "research"
+        - "university"
+        - "funding"
+        - "assessment"
+        - "integrity"
+        - "artificial intelligence"
+        - "governance"
+        - "technology transfer"
+        - "sustainability"
+        - "climate"
+        - "water"
+        - "biodiversity"
+        - "higher education"
+        - "doctoral"
+    canales_es:
+      - { nombre: "Universidad Nacional de Colombia", handle: "@UNALOficial" }
+      - { nombre: "UdeA", handle: "@udea" }
+      - { nombre: "UTP Pereira", handle: "@UTPereira" }
+      - { nombre: "Universidad Icesi", handle: "@UniversidadIcesi" }
+      - { nombre: "TEC de Monterrey", handle: "@tecdemonterrey" }
+      - { nombre: "CSIC Comunicación", handle: "@CSICcomunicacion" }
+      - { nombre: "CONICET Dialoga", handle: "@CONICETDialoga" }
+      - { nombre: "IICA Noticias", handle: "@IICAnoticias" }
+      - { nombre: "TvAgro", handle: "@TvAgro" }
+      - { nombre: "AGROSAVIA TV", handle: "@AGROSAVIATV" }
+      - { nombre: "Portafolio", handle: "@PortafolioCo" }
+      - { nombre: "El País", handle: "@elpais" }
+      - { nombre: "DW Español", handle: "@DWEspanol" }
+      - { nombre: "CNN en Español", handle: "@CNNEE" }
+      - { nombre: "Platzi", handle: "@Platzi" }
+      - { nombre: "Xataka", handle: "@xataka" }
+      - { nombre: "Hipertextual", handle: "@hipertextual" }
+      - { nombre: "Dot CSV", handle: "@DotCSV" }
+      - { nombre: "La Hiperactina", handle: "@Lahiperactina" }
+      - { nombre: "El Robot de Platón", handle: "@ElRobotdePlaton" }
+    canales_en:
+      - { nombre: "UNESCO", handle: "@unesco" }
+      - { nombre: "OECD", handle: "@OECD" }
+      - { nombre: "World Economic Forum", handle: "@wef" }
+      - { nombre: "Science Magazine", handle: "@ScienceMagazine" }
+      - { nombre: "MIT Technology Review", handle: "@technologyreview" }
+      - { nombre: "Broad Institute", handle: "@BroadInstitute" }
+      - { nombre: "NIH", handle: "@NIHOD" }
+      - { nombre: "Harvard University", handle: "@harvard" }
+      - { nombre: "MIT", handle: "@MIT" }
+      - { nombre: "Stanford University", handle: "@stanford" }
+      - { nombre: "University of Oxford", handle: "@OxfordUniversity" }
+      - { nombre: "The Economist", handle: "@TheEconomist" }
+      - { nombre: "Financial Times", handle: "@FinancialTimes" }
+      - { nombre: "Reuters", handle: "@Reuters" }
+      - { nombre: "BBC News", handle: "@BBCNews" }
+      - { nombre: "WIRED", handle: "@WIRED" }
+      - { nombre: "TechCrunch", handle: "@TechCrunch" }
+      - { nombre: "a16z", handle: "@a16z" }
+      - { nombre: "SciShow", handle: "@SciShow" }
+      - { nombre: "Kurzgesagt", handle: "@kurzgesagt" }

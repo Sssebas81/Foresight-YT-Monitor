@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScanCards YouTube — INNLAB · Universidad Icesi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Paleta Principal — Manual de Identidad Icesi (Febrero 2026) */
+      --icesi-blue: #5454e9;        /* Pantone 2131 C */
+      --icesi-white: #ffffff;
+
+      /* Paleta Complementaria Oficial */
+      --icesi-purple: #865cf0;      /* Pantone 2665 C */
+      --icesi-green: #4cb979;       /* Pantone 2251 C */
+      --icesi-orange: #e9683b;      /* Pantone Orange 21 C */
+      --icesi-yellow: #e4eb60;      /* Pantone 381 C */
+      --icesi-black: #000000;       /* Pantone Process Black C */
+      --icesi-gray-1: #88898c;      /* Pantone 423 C */
+      --icesi-gray-2: #cecfd4;      /* Pantone 420 C */
+
+      /* Superficies neutras derivadas para lectura en pantalla */
+      --surface-page: #f7f7fb;
+      --surface-soft: #f2f2fd;
+      --text-body: #1f2024;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", Arial, sans-serif;
+      background-color: var(--surface-page);
+      color: var(--text-body);
+      line-height: 1.55;
+      padding: 2rem 1.25rem 3rem;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    /* Encabezado institucional sobre fondo blanco (Regla Manual: versión positiva únicamente sobre blanco) */
+    .report-header {
+      background-color: var(--icesi-white);
+      border: 1px solid var(--icesi-gray-2);
+      border-radius: 14px;
+      padding: 2rem 2.25rem 1.85rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Cenefa simple oficial (rectángulos de grosor progresivo) */
+    .icesi-cenefa {
+      display: flex;
+      align-items: stretch;
+      gap: 5px;
+      height: 8px;
+      margin-bottom: 1.75rem;
+    }
+
+    .icesi-cenefa span {
+      display: block;
+      background-color: var(--icesi-blue);
+      height: 100%;
+    }
+
+    .icesi-cenefa span:nth-child(1) { width: 4px; }
+    .icesi-cenefa span:nth-child(2) { width: 6px; }
+    .icesi-cenefa span:nth-child(3) { width: 9px; }
+    .icesi-cenefa span:nth-child(4) { width: 13px; }
+    .icesi-cenefa span:nth-child(5) { width: 18px; }
+    .icesi-cenefa span:nth-child(6) { width: 24px; }
+    .icesi-cenefa span:nth-child(7) { width: 32px; }
+    .icesi-cenefa span:nth-child(8) { flex: 1; }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--icesi-gray-2);
+    }
+
+    /* Cintillo institucional sin fondo y con vectores/textos en azul Icesi */
+    .innlab-cintillo {
+      display: flex;
+      align-items: center;
+      gap: 1.65rem;
+      padding: 0.35rem 0;
+      background-color: transparent;
+      color: var(--icesi-blue);
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+
+    .innlab-cintillo__brand {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    .innlab-cintillo__wheel {
+      width: 54px;
+      height: 54px;
+      flex-shrink: 0;
+    }
+
+    .innlab-cintillo__icesi-stack {
+      display: flex;
+      flex-direction: column;
+      line-height: 0.94;
+    }
+
+    .innlab-cintillo__u {
+      font-size: 0.68rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: var(--icesi-blue);
+    }
+
+    .innlab-cintillo__icesi {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--icesi-blue);
+    }
+
+    .innlab-cintillo__divider {
+      width: 1.5px;
+      height: 50px;
+      background-color: var(--icesi-gray-1);
+      flex-shrink: 0;
+    }
+
+    .innlab-cintillo__innlab {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-shrink: 0;
+    }
+
+    .innlab-cintillo__innlab-name {
+      font-size: 1.75rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      line-height: 1;
+      color: var(--icesi-blue);
+    }
+
+    .innlab-cintillo__innlab-sub {
+      font-size: 0.76rem;
+      font-weight: 500;
+      line-height: 1.2;
+      color: var(--icesi-blue);
+    }
+
+    .innlab-cintillo__nodo {
+      font-size: 0.82rem;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--icesi-blue);
+    }
+
+    @media (max-width: 780px) {
+      .innlab-cintillo {
+        gap: 1rem;
+      }
+      .innlab-cintillo__divider {
+        display: none;
+      }
+      .innlab-cintillo__wheel {
+        width: 44px;
+        height: 44px;
+      }
+      .innlab-cintillo__icesi {
+        font-size: 1.8rem;
+      }
+      .innlab-cintillo__innlab-name {
+        font-size: 1.4rem;
+      }
+    }
+
+    /* Descriptor rectangular según arquitectura de marca Icesi (sin mayúsculas sostenidas largas) */
+    .area-tag {
+      background-color: var(--icesi-blue);
+      color: var(--icesi-white);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.45rem 1rem;
+      line-height: 1.2;
+      align-self: center;
+    }
+
+    .report-kicker {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--icesi-blue);
+      margin-bottom: 0.35rem;
+    }
+
+    .report-header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--icesi-black);
+      line-height: 1.25;
+      margin-bottom: 0.45rem;
+      text-align: left;
+    }
+
+    .report-header .subtitle {
+      font-size: 0.96rem;
+      font-weight: 400;
+      color: var(--icesi-gray-1);
+      text-align: left;
+      max-width: 760px;
+    }
+
+    /* Grid de ScanCards */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(490px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .scancard {
+      background-color: var(--icesi-white);
+      border: 1px solid var(--icesi-gray-2);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .scancard-media {
+      position: relative;
+      width: 100%;
+      height: 205px;
+      background-color: var(--icesi-black);
+      overflow: hidden;
+    }
+
+    .scancard-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .scancard-duration {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background-color: var(--icesi-black);
+      color: var(--icesi-white);
+      font-size: 0.75rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      padding: 0.22rem 0.55rem;
+      border-radius: 4px;
+    }
+
+    .scancard-body {
+      padding: 1.4rem 1.55rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      flex: 1;
+      text-align: left;
+    }
+
+    .scancard-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--icesi-gray-1);
+    }
+
+    .badge-channel {
+      background-color: var(--surface-soft);
+      color: var(--icesi-blue);
+      font-weight: 600;
+      padding: 0.22rem 0.65rem;
+      border-radius: 4px;
+    }
+
+    .badge-vertical {
+      background-color: var(--icesi-purple);
+      color: var(--icesi-white);
+      font-weight: 500;
+      padding: 0.22rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.76rem;
+    }
+
+    .scancard-meta time {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      color: var(--icesi-gray-1);
+    }
+
+    /* Manual pág. 43: Titulares pueden aplicarse en morado o negro siempre que sea legible, alineados a la izquierda */
+    .scancard-title {
+      font-size: 1.12rem;
+      font-weight: 700;
+      line-height: 1.38;
+      color: var(--icesi-black);
+      text-align: left;
+    }
+
+    .scancard-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .scancard-title a:hover {
+      color: var(--icesi-blue);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Manual pág. 43-44: Textos largos alineados estrictamente a la izquierda */
+    .scancard-summary {
+      font-size: 0.92rem;
+      font-weight: 400;
+      color: var(--text-body);
+      text-align: left;
+    }
+
+    .scancard-keypoints {
+      background-color: var(--surface-soft);
+      border-left: 3px solid var(--icesi-blue);
+      padding: 0.85rem 1.05rem;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.86rem;
+      text-align: left;
+    }
+
+    .scancard-keypoints strong {
+      display: block;
+      margin-bottom: 0.4rem;
+      color: var(--icesi-blue);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .scancard-keypoints ul {
+      padding-left: 1.15rem;
+      color: var(--text-body);
+    }
+
+    .scancard-keypoints li {
+      margin-bottom: 0.28rem;
+    }
+
+    .scancard-keypoints li:last-child {
+      margin-bottom: 0;
+    }
+
+    .scancard-footer {
+      margin-top: auto;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--icesi-gray-2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+    }
+
+    .scancard-id {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--icesi-gray-1);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .scancard-link {
+      color: var(--icesi-blue);
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .scancard-link:hover {
+      color: var(--icesi-purple);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Iconografía funcional Icesi: línea uniforme, esquinas angulares y terminaciones rectas */
+    .icesi-icon {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: butt;
+      stroke-linejoin: miter;
+    }
+
+    .report-footer {
+      margin-top: 2.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--icesi-gray-2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--icesi-gray-1);
+    }
+
+    .report-footer strong {
+      color: var(--icesi-blue);
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+      .report-header {
+        padding: 1.4rem 1.25rem;
+      }
+    }
+
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      body {
+        background-color: var(--icesi-white);
+        padding: 0;
+      }
+      .cards-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="report-header">
+      <!-- Cenefa oficial de marca Icesi -->
+      <div class="icesi-cenefa" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="header-top">
+        <!-- Cintillo horizontal Universidad Icesi + INNLAB + Nodo (sin fondo, vectores en azul) -->
+        <div class="innlab-cintillo" role="region" aria-label="Universidad Icesi — INNLAB Centro de Innovación — Nodo de Innovación Basada en Inteligencia Artificial y Tecnologías Digitales">
+          <div class="innlab-cintillo__brand">
+            <svg class="innlab-cintillo__wheel" viewBox="0 0 84 84" fill="none" aria-hidden="true">
+              <g fill="currentColor" transform="translate(42, 42)">
+                <rect x="-2" y="-21.5" width="4" height="8.5" transform="rotate(0)" />
+                <rect x="-1.9" y="-21.5" width="3.8" height="8.5" transform="rotate(15)" />
+                <rect x="-1.8" y="-21.5" width="3.6" height="8.5" transform="rotate(30)" />
+                <rect x="-1.7" y="-21.5" width="3.4" height="8.5" transform="rotate(45)" />
+                <rect x="-1.6" y="-21.5" width="3.2" height="8.5" transform="rotate(60)" />
+                <rect x="-1.5" y="-21.5" width="3" height="8.5" transform="rotate(75)" />
+                <rect x="-1.4" y="-21.5" width="2.8" height="8.5" transform="rotate(90)" />
+                <rect x="-1.3" y="-21.5" width="2.6" height="8.5" transform="rotate(105)" />
+                <rect x="-1.2" y="-21.5" width="2.4" height="8.5" transform="rotate(120)" />
+                <rect x="-1.1" y="-21.5" width="2.2" height="8.5" transform="rotate(135)" />
+                <rect x="-1.05" y="-21.5" width="2.1" height="8.5" transform="rotate(150)" />
+                <rect x="-1" y="-21.5" width="2" height="8.5" transform="rotate(165)" />
+                <rect x="-0.95" y="-21.5" width="1.9" height="8.5" transform="rotate(180)" />
+                <rect x="-1" y="-21.5" width="2" height="8.5" transform="rotate(195)" />
+                <rect x="-1.1" y="-21.5" width="2.2" height="8.5" transform="rotate(210)" />
+                <rect x="-1.2" y="-21.5" width="2.4" height="8.5" transform="rotate(225)" />
+                <rect x="-1.35" y="-21.5" width="2.7" height="8.5" transform="rotate(240)" />
+                <rect x="-1.5" y="-21.5" width="3" height="8.5" transform="rotate(255)" />
+                <rect x="-1.65" y="-21.5" width="3.3" height="8.5" transform="rotate(270)" />
+                <rect x="-1.8" y="-21.5" width="3.6" height="8.5" transform="rotate(285)" />
+                <rect x="-1.95" y="-21.5" width="3.9" height="8.5" transform="rotate(300)" />
+                <rect x="-2.1" y="-21.5" width="4.2" height="8.5" transform="rotate(315)" />
+                <rect x="-2.2" y="-21.5" width="4.4" height="8.5" transform="rotate(330)" />
+                <rect x="-2.3" y="-21.5" width="4.6" height="8.5" transform="rotate(345)" />
+
+                <rect x="-3" y="-35" width="6" height="10.5" transform="rotate(0)" />
+                <rect x="-1.3" y="-35" width="2.6" height="10.5" transform="rotate(15)" />
+                <rect x="-1.4" y="-35" width="2.8" height="10.5" transform="rotate(30)" />
+                <rect x="-1.5" y="-35" width="3" height="10.5" transform="rotate(45)" />
+                <rect x="-1.6" y="-35" width="3.2" height="10.5" transform="rotate(60)" />
+                <rect x="-1.7" y="-35" width="3.4" height="10.5" transform="rotate(75)" />
+                <rect x="-1.8" y="-35" width="3.6" height="10.5" transform="rotate(90)" />
+                <rect x="-1.9" y="-35" width="3.8" height="10.5" transform="rotate(105)" />
+                <rect x="-2" y="-35" width="4" height="10.5" transform="rotate(120)" />
+                <rect x="-2.1" y="-35" width="4.2" height="10.5" transform="rotate(135)" />
+                <rect x="-2.2" y="-35" width="4.4" height="10.5" transform="rotate(150)" />
+                <rect x="-2.3" y="-35" width="4.6" height="10.5" transform="rotate(165)" />
+                <rect x="-2.4" y="-35" width="4.8" height="10.5" transform="rotate(180)" />
+                <rect x="-2.5" y="-35" width="5" height="10.5" transform="rotate(195)" />
+                <rect x="-2.6" y="-35" width="5.2" height="10.5" transform="rotate(210)" />
+                <rect x="-2.7" y="-35" width="5.4" height="10.5" transform="rotate(225)" />
+                <rect x="-2.8" y="-35" width="5.6" height="10.5" transform="rotate(240)" />
+                <rect x="-2.9" y="-35" width="5.8" height="10.5" transform="rotate(255)" />
+                <rect x="-3" y="-35" width="6" height="10.5" transform="rotate(270)" />
+                <rect x="-3.1" y="-35" width="6.2" height="10.5" transform="rotate(285)" />
+                <rect x="-3.2" y="-35" width="6.4" height="10.5" transform="rotate(300)" />
+                <rect x="-3.3" y="-35" width="6.6" height="10.5" transform="rotate(315)" />
+                <rect x="-3.4" y="-35" width="6.8" height="10.5" transform="rotate(330)" />
+                <rect x="-3.5" y="-35" width="7" height="10.5" transform="rotate(345)" />
+              </g>
+            </svg>
+            <div class="innlab-cintillo__icesi-stack">
+              <span class="innlab-cintillo__u">Universidad</span>
+              <span class="innlab-cintillo__icesi">icesi</span>
+            </div>
+          </div>
+
+          <span class="innlab-cintillo__divider" aria-hidden="true"></span>
+
+          <div class="innlab-cintillo__innlab">
+            <span class="innlab-cintillo__innlab-name">INNLAB</span>
+            <span class="innlab-cintillo__innlab-sub">Centro de<br />Innovación</span>
+          </div>
+
+          <span class="innlab-cintillo__divider" aria-hidden="true"></span>
+
+          <p class="innlab-cintillo__nodo">
+            Nodo de Innovación Basada en Inteligencia<br />
+            Artificial y Tecnologías Digitales
+          </p>
+        </div>
+
+        <div class="area-tag">Foresight · Anticipa el futuro, decide hoy.</div>
+      </div>
+
+      <p class="report-kicker">Radar de señales · YouTube</p>
+      <h1>ScanCards de vigilancia tecnológica</h1>
+      <p class="subtitle" data-field="metadata.subtitulo_portada">Síntesis de videos monitoreados para identificar tendencias y señales clave</p>
+    </header>
+
+    <main class="cards-grid">
+      <!-- SCANCARD_TEMPLATE_START -->
+      <article class="scancard">
+        <div class="scancard-media">
+          <img data-field="scancards[0].imagen" src="" alt="Miniatura del video" loading="lazy" />
+          <span class="scancard-duration" data-field="scancards[0].duracion">00:00</span>
+        </div>
+
+        <div class="scancard-body">
+          <div class="scancard-meta">
+            <span class="badge-channel" data-field="scancards[0].canal">Canal</span>
+            <span class="badge-vertical" data-field="scancards[0].vertical">Vertical</span>
+            <span>·</span>
+            <time data-field="scancards[0].fecha_publicacion">YYYY-MM-DD</time>
+          </div>
+
+          <h2 class="scancard-title">
+            <a data-href-field="scancards[0].url" data-field="scancards[0].titulo" href="#" target="_blank" rel="noopener">
+              Título del video
+            </a>
+          </h2>
+
+          <p class="scancard-summary" data-field="scancards[0].resumen">
+            Resumen del video...
+          </p>
+
+          <div class="scancard-keypoints">
+            <strong>Puntos clave</strong>
+            <div data-field="scancards[0].puntos_clave_html"></div>
+          </div>
+
+          <div class="scancard-footer">
+            <span class="scancard-id" data-field="scancards[0].id">YT-001</span>
+            <a class="scancard-link" data-href-field="scancards[0].url" href="#" target="_blank" rel="noopener">
+              <span>Ver en YouTube</span>
+              <svg class="icesi-icon" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M3 8h9M8 4l4 4-4 4" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </article>
+      <!-- SCANCARD_TEMPLATE_END -->
+    </main>
+
+    <footer class="report-footer">
+      <span><strong>INNLAB</strong> · Centro de Innovación · Universidad Icesi</span>
+      <span>Cali, Colombia</span>
+    </footer>
+  </div>
+</body>
+</html>

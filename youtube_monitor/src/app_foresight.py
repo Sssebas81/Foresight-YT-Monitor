@@ -270,7 +270,7 @@ HTML_UI = r"""<!DOCTYPE html>
       --radius: 14px;
     }
 
-    * { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
 
     html { font-size: 16px; }
 
@@ -324,7 +324,6 @@ HTML_UI = r"""<!DOCTYPE html>
       gap: 20px;
     }
 
-    /* Cintillo institucional sin fondo y con vectores/textos en azul Icesi */
     .innlab-cintillo {
       display: flex;
       align-items: center;
@@ -452,7 +451,7 @@ HTML_UI = r"""<!DOCTYPE html>
 
     .container {
       max-width: 1680px;
-      margin: 22px auto 56px;
+      margin: 22px auto 28px;
       padding: 0 32px;
       display: grid;
       grid-template-columns: 1.25fr 0.95fr;
@@ -752,6 +751,40 @@ HTML_UI = r"""<!DOCTYPE html>
       color: var(--danger);
       border-color: #f5c2c7;
     }
+
+    .scancards-footer {
+      max-width: 1680px;
+      margin: 0 auto 56px;
+      padding: 0 32px;
+    }
+    .scancards-footer-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .scancards-footer-title {
+      margin: 0 0 4px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--icesi-navy);
+    }
+    .scancards-footer-sub {
+      margin: 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .scancards-footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
@@ -847,12 +880,6 @@ HTML_UI = r"""<!DOCTYPE html>
 
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <span class="foresight-pill">Foresight · Anticipa el futuro, decide hoy.</span>
-        <a id="openReportBtn" href="/reporte" target="_blank" class="btn btn-success disabled">
-          Abrir ScanCards HTML ↗
-        </a>
-        <a id="downloadPdfBtn" href="/reporte?print=1" target="_blank" class="btn btn-pdf disabled">
-          Descargar PDF ⭳
-        </a>
       </div>
 
       <div class="header-title-block">
@@ -998,6 +1025,25 @@ HTML_UI = r"""<!DOCTYPE html>
       </div>
     </section>
   </main>
+
+  <section id="scancardsFooter" class="scancards-footer">
+    <div class="scancards-footer-bar">
+      <div>
+        <h2 class="scancards-footer-title">ScanCards y exportación en PDF</h2>
+        <p id="scancardsFooterStatus" class="scancards-footer-sub">
+          Ejecuta el radar para habilitar la vista de ScanCards y la descarga en PDF.
+        </p>
+      </div>
+      <div class="scancards-footer-actions">
+        <a id="openReportBtn" href="/reporte" target="_blank" rel="noopener" class="btn btn-success disabled">
+          Abrir ScanCards HTML ↗
+        </a>
+        <a id="downloadPdfBtn" href="/reporte?print=1" target="_blank" rel="noopener" class="btn btn-pdf disabled">
+          Descargar PDF ⭳
+        </a>
+      </div>
+    </div>
+  </section>
 
   <script>
     const RECOMMENDED_DEFAULTS = {
@@ -1254,6 +1300,7 @@ HTML_UI = r"""<!DOCTYPE html>
         const runBtn = document.getElementById("runBtn");
         const reportBtn = document.getElementById("openReportBtn");
         const pdfBtn = document.getElementById("downloadPdfBtn");
+        const footerStatus = document.getElementById("scancardsFooterStatus");
 
         if (data.logs && data.logs.length) {
           term.textContent = data.logs.join("\n");
@@ -1262,6 +1309,11 @@ HTML_UI = r"""<!DOCTYPE html>
 
         reportBtn.classList.toggle("disabled", !data.report_ready);
         pdfBtn.classList.toggle("disabled", !data.report_ready);
+        if (footerStatus) {
+          footerStatus.textContent = data.report_ready
+            ? "ScanCards listas. Abre el reporte HTML o descarga el PDF desde aquí."
+            : "Ejecuta el radar para habilitar la vista de ScanCards y la descarga en PDF.";
+        }
 
         if (data.running) {
           badge.className = "status-badge running";
@@ -1454,7 +1506,17 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/reporte":
             if HTML_OUT.exists():
-                self._send_html(HTML_OUT.read_text(encoding="utf-8"))
+                html_content = HTML_OUT.read_text(encoding="utf-8")
+                if "print=1" in parsed.query and "window.print()" not in html_content:
+                    print_script = (
+                        "<script>window.addEventListener('load',function(){"
+                        "setTimeout(function(){window.print();},350);});</script>"
+                    )
+                    if "</body>" in html_content:
+                        html_content = html_content.replace("</body>", print_script + "</body>")
+                    else:
+                        html_content += print_script
+                self._send_html(html_content)
             else:
                 self._send_html(
                     "<h3>Aún no se ha generado ningún reporte. Ejecuta primero el radar desde el panel.</h3>",

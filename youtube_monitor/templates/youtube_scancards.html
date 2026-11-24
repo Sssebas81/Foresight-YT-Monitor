@@ -28,7 +28,7 @@
       --text-body: #1f2024;
     }
 
-    * {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
@@ -194,6 +194,13 @@
       }
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
     /* Descriptor rectangular según arquitectura de marca Icesi (sin mayúsculas sostenidas largas) */
     .area-tag {
       background-color: var(--icesi-blue);
@@ -203,6 +210,25 @@
       padding: 0.45rem 1rem;
       line-height: 1.2;
       align-self: center;
+    }
+
+    .btn-pdf-export {
+      background-color: var(--icesi-black);
+      color: var(--icesi-white);
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 1.05rem;
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .btn-pdf-export:hover {
+      background-color: #242636;
     }
 
     .report-kicker {
@@ -406,6 +432,32 @@
       text-underline-offset: 3px;
     }
 
+    /* Barra de exportación ubicada al final de las ScanCards */
+    .cards-export-bar {
+      margin-top: 2rem;
+      padding: 1.25rem 1.5rem;
+      background-color: var(--icesi-white);
+      border: 1px solid var(--icesi-gray-2);
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .cards-export-bar__title {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--icesi-black);
+      margin-bottom: 0.15rem;
+    }
+
+    .cards-export-bar__sub {
+      font-size: 0.84rem;
+      color: var(--icesi-gray-1);
+    }
+
     /* Iconografía funcional Icesi: línea uniforme, esquinas angulares y terminaciones rectas */
     .icesi-icon {
       width: 14px;
@@ -445,7 +497,7 @@
     }
 
     @media print {
-      * {
+      *, *::before, *::after {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
@@ -453,9 +505,21 @@
         background-color: var(--icesi-white);
         padding: 0;
       }
+      .no-print {
+        display: none !important;
+      }
+      .report-header {
+        border: none;
+        padding: 0.5rem 0 1rem;
+        margin-bottom: 1rem;
+      }
       .cards-grid {
         grid-template-columns: 1fr 1fr;
         gap: 1rem;
+      }
+      .scancard {
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
     }
   </style>
@@ -547,7 +611,9 @@
           </p>
         </div>
 
-        <div class="area-tag">Foresight · Anticipa el futuro, decide hoy.</div>
+        <div class="header-actions">
+          <div class="area-tag">Foresight · Anticipa el futuro, decide hoy.</div>
+        </div>
       </div>
 
       <p class="report-kicker">Radar de señales · YouTube</p>
@@ -600,10 +666,64 @@
       <!-- SCANCARD_TEMPLATE_END -->
     </main>
 
+    <section class="cards-export-bar no-print" aria-label="Exportar ScanCards">
+      <div>
+        <div class="cards-export-bar__title">Exportar reporte de ScanCards</div>
+        <div class="cards-export-bar__sub">Guarda las tarjetas visibles en formato PDF con su formato institucional.</div>
+      </div>
+      <button type="button" id="exportPdfBtn" class="btn-pdf-export" onclick="exportScanCardsPdf()">
+        <span>Descargar PDF</span>
+        <svg class="icesi-icon" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13h11" />
+        </svg>
+      </button>
+    </section>
+
     <footer class="report-footer">
       <span><strong>INNLAB</strong> · Centro de Innovación · Universidad Icesi</span>
       <span>Cali, Colombia</span>
     </footer>
   </div>
+
+  <script>
+    function waitForImagesReady(timeoutMs = 2500) {
+      const imgs = Array.from(document.querySelectorAll("img"));
+      imgs.forEach((img) => {
+        img.loading = "eager";
+      });
+      const pending = imgs.filter((img) => !img.complete);
+      if (!pending.length) return Promise.resolve();
+      return new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          resolve();
+        };
+        let remaining = pending.length;
+        pending.forEach((img) => {
+          img.addEventListener("load", () => {
+            if (--remaining <= 0) finish();
+          }, { once: true });
+          img.addEventListener("error", () => {
+            if (--remaining <= 0) finish();
+          }, { once: true });
+        });
+        setTimeout(finish, timeoutMs);
+      });
+    }
+
+    async function exportScanCardsPdf() {
+      await waitForImagesReady();
+      window.print();
+    }
+
+    window.addEventListener("load", () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("print") === "1") {
+        exportScanCardsPdf();
+      }
+    });
+  </script>
 </body>
 </html>

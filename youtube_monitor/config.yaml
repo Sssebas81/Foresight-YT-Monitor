@@ -1,12 +1,14 @@
 general:
-  dias_atras: 14
+  dias_atras: 180
   max_videos_por_canal: 2
-  max_duracion_minutos: 15
-  modo_busqueda: "canales" # "canales" (ahorra cuota) o "busqueda" (search.list por keyword)
+  max_duracion_minutos: 20
+  modo_busqueda: "busqueda" # "canales" (ahorra cuota) o "busqueda" (search.list por keyword)
   idioma_resumen: "español"
   excluir_shorts: true
   max_shorts_segundos: 60
   excluir_en_vivo: true
+  pausa_min_segundos: 1.5
+  pausa_max_segundos: 3.5
   idiomas_subtitulos:
     - "es"
     - "es-419"
@@ -21,6 +23,84 @@ rutas:
   salida_md: "output/resultados.md"
 
 verticales:
+  territorio_sostenibilidad:
+    descripcion: "Territorio y sostenibilidad en el Eje Cafetero, Quindío, Armenia y los Andes colombianos (agua, café, clima, biodiversidad y ordenamiento)"
+    keywords:
+      es:
+        - "eje cafetero"
+        - "quindío"
+        - "armenia"
+        - "paisaje cultural cafetero"
+        - "sostenibilidad"
+        - "agua"
+        - "biodiversidad"
+        - "cambio climático"
+        - "café sostenible"
+        - "territorio y sostenibilidad"
+        - "medio ambiente"
+        - "turismo sostenible"
+      en:
+        - "colombia"
+        - "andes"
+        - "coffee"
+        - "sustainability"
+        - "biodiversity"
+        - "water"
+        - "climate adaptation"
+        - "sustainable coffee"
+        - "eje cafetero"
+        - "conservation"
+    canales_es:
+      # 1. Medios regionales y prensa territorial (Quindío, Caldas, Risaralda)
+      - { nombre: "Telecafé", handle: "@canaltelecafe" }
+      - { nombre: "La Crónica del Quindío", handle: "@croniquindio" }
+      - { nombre: "El Quindiano", handle: "@ElQuindiano" }
+      - { nombre: "La Patria Manizales", handle: "@lapatriamanizales" }
+      - { nombre: "El Diario Pereira", handle: "@diariodelotunco" }
+
+      # 2. Autoridades ambientales del Eje Cafetero y conservación
+      - { nombre: "CRQ Quindío", handle: "@CRQQuindio" }
+      - { nombre: "CARDER Risaralda", handle: "@CarderRisaralda" }
+      - { nombre: "Corpocaldas", handle: "@CorpocaldasOficial" }
+      - { nombre: "Parques Nacionales Colombia", handle: "@ParquesColombia" }
+
+      # 3. Caficultura, gremios y ciencia agronómica del territorio
+      - { nombre: "Federación Nacional de Cafeteros", handle: "@FederacionCafeteros" }
+      - { nombre: "Cenicafé FNC", handle: "@CenicaféFNC" }
+      - { nombre: "Comité de Cafeteros del Quindío", handle: "@fncquindio" }
+      - { nombre: "Comité de Cafeteros de Caldas", handle: "@ComitedeCafeterosdeCaldas" }
+      - { nombre: "Comité de Cafeteros de Risaralda", handle: "@ComiteCafeterosRisaralda" }
+
+      # 4. Universidades públicas e investigación de biodiversidad
+      - { nombre: "Universidad del Quindío", handle: "@uniquindio" }
+      - { nombre: "UTP Pereira", handle: "@UTPereira" }
+      - { nombre: "Universidad de Caldas", handle: "@universidadcaldas" }
+      - { nombre: "Instituto Humboldt", handle: "@instituto_humboldt" }
+
+      # 5. Periodismo de investigación, territorio y sostenibilidad
+      - { nombre: "La Silla Vacía", handle: "@lasillavacia" }
+      - { nombre: "Mongabay Latam", handle: "@MongabayLatam" }
+
+    canales_en:
+      # 1. Periodismo especializado en clima, medio ambiente y conservación
+      - { nombre: "Carbon Brief", handle: "@CarbonBriefUK" }
+      - { nombre: "Grist", handle: "@grist" }
+      - { nombre: "DW Planet A", handle: "@DWPlanetA" }
+      - { nombre: "Vox", handle: "@Vox" }
+      - { nombre: "The Guardian", handle: "@TheGuardian" }
+      # 2. Divulgación científica sobre clima, agua, energía y sostenibilidad
+      - { nombre: "PBS Terra", handle: "@pbsterra" }
+      - { nombre: "Undecided with Matt Ferrell", handle: "@UndecidedTechnology" }
+      - { nombre: "Just Have a Think", handle: "@JustHaveaThink" }
+      - { nombre: "ClimateAdam", handle: "@ClimateAdam" }
+      - { nombre: "Our Changing Climate", handle: "@OurChangingClimate" }
+      - { nombre: "Climate Town", handle: "@ClimateTown" }
+      - { nombre: "National Geographic", handle: "@NatGeo" }
+      # 3. Organismos internacionales e investigación en bosques, agua y clima
+      - { nombre: "UN Environment Programme (UNEP)", handle: "@UNEP" }
+      - { nombre: "World Economic Forum", handle: "@wef" }
+      - { nombre: "BBC News", handle: "@BBCNews" }
+
   fintech:
     descripcion: "Servicios financieros digitales, banca abierta, pagos, activos digitales y regulación financiera"
     keywords:

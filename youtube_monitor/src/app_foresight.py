@@ -45,6 +45,11 @@ DEFAULT_UI_PARAMS = {
     "max_minutos": 15,
     "max_canales": 12,
     "whisper_model": "small",
+    "pausa_min": 1.5,
+    "pausa_max": 3.5,
+    "proxy": "",
+    "cookies": "",
+    "cookies_from_browser": "",
 }
 
 
@@ -145,6 +150,24 @@ class JobManager:
             whisper_model = str(params.get("whisper_model") or DEFAULT_UI_PARAMS["whisper_model"]).strip()
             if whisper_model:
                 cmd.extend(["--whisper-model", whisper_model])
+
+            raw_pausa_min = params.get("pausa_min")
+            pausa_min = max(0.0, float(DEFAULT_UI_PARAMS["pausa_min"] if raw_pausa_min is None else raw_pausa_min))
+            raw_pausa_max = params.get("pausa_max")
+            pausa_max = max(pausa_min, float(DEFAULT_UI_PARAMS["pausa_max"] if raw_pausa_max is None else raw_pausa_max))
+            cmd.extend(["--pausa-min", str(pausa_min), "--pausa-max", str(pausa_max)])
+
+            proxy_val = str(params.get("proxy") or "").strip()
+            if proxy_val:
+                cmd.extend(["--proxy", proxy_val])
+
+            cookies_val = str(params.get("cookies") or "").strip()
+            if cookies_val:
+                cmd.extend(["--cookies", cookies_val])
+
+            cookies_browser_val = str(params.get("cookies_from_browser") or "").strip()
+            if cookies_browser_val:
+                cmd.extend(["--cookies-from-browser", cookies_browser_val])
 
             canales_custom = str(params.get("canales") or "").strip()
             if canales_custom:
@@ -524,6 +547,16 @@ HTML_UI = r"""<!DOCTYPE html>
       margin-top: 4px;
     }
 
+    .config-warning {
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #fff8e6;
+      border: 1px solid #f2cf7e;
+      color: #7a5200;
+      font-size: 13.5px;
+    }
+
     .uq-box {
       margin-top: 18px;
       padding: 18px;
@@ -896,7 +929,8 @@ HTML_UI = r"""<!DOCTYPE html>
     <section>
       <div class="card">
         <h2 class="card-title">1. Vertical de vigilancia o encargo a medida</h2>
-        <p class="card-sub">Carga automáticamente los 20 canales en español, 20 en inglés y sus palabras clave base desde <code>config.yaml</code>.</p>
+        <p class="card-sub">Carga automáticamente los canales en español e inglés y sus palabras clave base desde <code>config.yaml</code>.</p>
+        <div id="configWarning" class="config-warning" style="display:none;"></div>
         <div id="verticalGrid" class="vertical-grid"></div>
 
         <div id="uqPanel" class="uq-box">
@@ -923,7 +957,7 @@ HTML_UI = r"""<!DOCTYPE html>
 
       <div class="card">
         <h2 class="card-title">
-          <span>3. Parámetros de extracción y Whisper</span>
+          <span>3. Parámetros de extracción, anti-bloqueo y Whisper</span>
           <button type="button" id="resetDefaultsBtn" class="btn btn-secondary" style="padding:8px 14px;font-size:13.5px;">
             Valores recomendados
           </button>
@@ -934,9 +968,9 @@ HTML_UI = r"""<!DOCTYPE html>
           <div class="field">
             <label for="idiomaSelect">Idioma de los canales</label>
             <select id="idiomaSelect">
-              <option value="todos" selected>Todos (20 ES + 20 EN)</option>
-              <option value="es">Solo Español (20 canales ES)</option>
-              <option value="en">Solo Inglés (20 canales EN)</option>
+              <option value="todos" selected>Todos (Canales ES + EN)</option>
+              <option value="es">Solo Español (Canales ES)</option>
+              <option value="en">Solo Inglés (Canales EN)</option>
             </select>
           </div>
 
@@ -969,7 +1003,19 @@ HTML_UI = r"""<!DOCTYPE html>
           <div class="field">
             <label for="maxCanalesInput">Tope de canales a revisar (0 = todos)</label>
             <input type="number" id="maxCanalesInput" min="0" max="200" value="12" />
-            <span class="field-hint">Recomendado: 12 en pruebas ágiles; 0 para los 40 canales.</span>
+            <span class="field-hint">Recomendado: 12 en pruebas ágiles; 0 para todos los configurados.</span>
+          </div>
+
+          <div class="field">
+            <label for="pausaMinInput">Pausa mínima entre videos (seg)</label>
+            <input type="number" id="pausaMinInput" min="0" max="60" step="0.5" value="1.5" />
+            <span class="field-hint">Ayuda a evitar límites o bloqueos por ráfagas.</span>
+          </div>
+
+          <div class="field">
+            <label for="pausaMaxInput">Pausa máxima entre videos (seg)</label>
+            <input type="number" id="pausaMaxInput" min="0" max="120" step="0.5" value="3.5" />
+            <span class="field-hint">Aplica variación aleatoria (jitter) sobre la pausa mínima.</span>
           </div>
 
           <div class="field">
@@ -985,6 +1031,18 @@ HTML_UI = r"""<!DOCTYPE html>
           <div class="field">
             <label for="canalesInput">Filtrar canales puntuales (opcional)</label>
             <input type="text" id="canalesInput" placeholder="Ej. CNN, Portafolio, Bloomberg Línea" />
+          </div>
+
+          <div class="field">
+            <label for="proxyInput">Proxy opcional (http/https/socks5)</label>
+            <input type="text" id="proxyInput" placeholder="Ej. http://usuario:clave@host:puerto" />
+            <span class="field-hint">Opcional: útil si tu IP recibe bloqueos temporales en YouTube.</span>
+          </div>
+
+          <div class="field">
+            <label for="cookiesInput">Archivo cookies.txt o navegador (yt-dlp)</label>
+            <input type="text" id="cookiesInput" placeholder="Ruta cookies.txt o navegador (ej. chrome, edge)" />
+            <span class="field-hint">Ayuda en videos con HTTP 403 al descargar audio.</span>
           </div>
 
           <div class="field full">
@@ -1053,7 +1111,11 @@ HTML_UI = r"""<!DOCTYPE html>
       max_videos: 1,
       max_minutos: 15,
       max_canales: 12,
-      whisper_model: "small"
+      whisper_model: "small",
+      pausa_min: 1.5,
+      pausa_max: 3.5,
+      proxy: "",
+      cookies: ""
     };
 
     const UQ_EJES = [
@@ -1109,7 +1171,11 @@ HTML_UI = r"""<!DOCTYPE html>
       document.getElementById("maxVideosInput").value = RECOMMENDED_DEFAULTS.max_videos;
       document.getElementById("maxMinutosInput").value = forVertical === "uniquindio_estatuto" ? 20 : RECOMMENDED_DEFAULTS.max_minutos;
       document.getElementById("maxCanalesInput").value = RECOMMENDED_DEFAULTS.max_canales;
+      document.getElementById("pausaMinInput").value = RECOMMENDED_DEFAULTS.pausa_min;
+      document.getElementById("pausaMaxInput").value = RECOMMENDED_DEFAULTS.pausa_max;
       document.getElementById("whisperSelect").value = RECOMMENDED_DEFAULTS.whisper_model;
+      document.getElementById("proxyInput").value = RECOMMENDED_DEFAULTS.proxy;
+      document.getElementById("cookiesInput").value = RECOMMENDED_DEFAULTS.cookies;
       document.getElementById("forzarCheck").checked = false;
     }
 
@@ -1128,8 +1194,21 @@ HTML_UI = r"""<!DOCTYPE html>
 
     function renderVerticalCards() {
       const grid = document.getElementById("verticalGrid");
+      const warn = document.getElementById("configWarning");
       grid.innerHTML = "";
-      const keys = [...Object.keys(appConfig.verticales || {}), "personalizado"];
+      const vertEntries = Object.entries(appConfig.verticales || {});
+
+      if (!vertEntries.length) {
+        warn.style.display = "block";
+        warn.textContent = "No se detectaron verticales en config.yaml (o el archivo no existe/tiene un error de sintaxis). Revisa config.yaml o usa 'Foresight a medida (Libre)'.";
+      } else {
+        warn.style.display = "none";
+      }
+
+      const keys = [...vertEntries.map(([k]) => k), "personalizado"];
+      if (!keys.includes(selectedVertical)) {
+        selectedVertical = keys[0] || "personalizado";
+      }
 
       keys.forEach((key) => {
         const vObj = appConfig.verticales?.[key];
@@ -1235,6 +1314,11 @@ HTML_UI = r"""<!DOCTYPE html>
     function collectPayload() {
       const rawMin = document.getElementById("maxMinutosInput").value;
       const rawCan = document.getElementById("maxCanalesInput").value;
+      const rawCookies = document.getElementById("cookiesInput").value.trim();
+      const lowerCookies = rawCookies.toLowerCase();
+      const browsers = ["chrome", "edge", "firefox", "brave", "opera", "chromium"];
+      const isBrowser = browsers.includes(lowerCookies);
+
       return {
         vertical: selectedVertical === "personalizado" ? "todas" : selectedVertical,
         idioma: document.getElementById("idiomaSelect").value,
@@ -1243,7 +1327,12 @@ HTML_UI = r"""<!DOCTYPE html>
         max_videos: parseInt(document.getElementById("maxVideosInput").value || String(RECOMMENDED_DEFAULTS.max_videos), 10),
         max_minutos: rawMin === "" ? RECOMMENDED_DEFAULTS.max_minutos : parseInt(rawMin, 10),
         max_canales: rawCan === "" ? RECOMMENDED_DEFAULTS.max_canales : parseInt(rawCan, 10),
+        pausa_min: parseFloat(document.getElementById("pausaMinInput").value || String(RECOMMENDED_DEFAULTS.pausa_min)),
+        pausa_max: parseFloat(document.getElementById("pausaMaxInput").value || String(RECOMMENDED_DEFAULTS.pausa_max)),
         whisper_model: document.getElementById("whisperSelect").value,
+        proxy: document.getElementById("proxyInput").value.trim(),
+        cookies: !isBrowser ? rawCookies : "",
+        cookies_from_browser: isBrowser ? lowerCookies : "",
         canales: document.getElementById("canalesInput").value.trim(),
         forzar: document.getElementById("forzarCheck").checked,
         keywords: currentKeywords
@@ -1260,7 +1349,12 @@ HTML_UI = r"""<!DOCTYPE html>
       parts.push(`--max-videos ${p.max_videos}`);
       parts.push(`--max-minutos ${p.max_minutos}`);
       if (p.max_canales > 0) parts.push(`--max-canales ${p.max_canales}`);
+      parts.push(`--pausa-min ${p.pausa_min}`);
+      parts.push(`--pausa-max ${p.pausa_max}`);
       parts.push(`--whisper-model ${p.whisper_model}`);
+      if (p.proxy) parts.push(`--proxy "${p.proxy}"`);
+      if (p.cookies) parts.push(`--cookies "${p.cookies}"`);
+      if (p.cookies_from_browser) parts.push(`--cookies-from-browser ${p.cookies_from_browser}`);
       if (p.canales) parts.push(`--canal "${p.canales}"`);
       if (p.keywords.length) parts.push(`--keywords "${p.keywords.join(", ")}"`);
       if (p.forzar) parts.push("--forzar");
@@ -1367,11 +1461,21 @@ HTML_UI = r"""<!DOCTYPE html>
 
     async function init() {
       await loadLogosIfAvailable();
-      const res = await fetch("/api/config");
-      appConfig = await res.json();
+      try {
+        const res = await fetch("/api/config");
+        const loadedCfg = await res.json();
+        appConfig = (loadedCfg && typeof loadedCfg === "object") ? loadedCfg : { verticales: {} };
+        if (!appConfig.verticales || typeof appConfig.verticales !== "object") {
+          appConfig.verticales = {};
+        }
+      } catch (err) {
+        console.error("Error cargando /api/config:", err);
+        appConfig = { verticales: {} };
+      }
 
-      applyRecommendedDefaults("fintech");
-      selectVertical("fintech");
+      const firstKey = Object.keys(appConfig.verticales)[0] || "fintech";
+      applyRecommendedDefaults(firstKey);
+      selectVertical(firstKey);
       pollStatus();
 
       document.getElementById("addKwBtn").onclick = addKeywordFromInput;
@@ -1402,11 +1506,14 @@ HTML_UI = r"""<!DOCTYPE html>
         renderChips();
         updateCommandPreview();
       };
-      ["modoSelect", "diasInput", "maxVideosInput", "maxMinutosInput", "maxCanalesInput", "whisperSelect", "canalesInput", "forzarCheck"]
-        .forEach((id) => {
-          document.getElementById(id).addEventListener("change", updateCommandPreview);
-          document.getElementById(id).addEventListener("input", updateCommandPreview);
-        });
+      [
+        "modoSelect", "diasInput", "maxVideosInput", "maxMinutosInput",
+        "maxCanalesInput", "pausaMinInput", "pausaMaxInput", "whisperSelect",
+        "proxyInput", "cookiesInput", "canalesInput", "forzarCheck"
+      ].forEach((id) => {
+        document.getElementById(id).addEventListener("change", updateCommandPreview);
+        document.getElementById(id).addEventListener("input", updateCommandPreview);
+      });
       document.getElementById("runBtn").onclick = startExecution;
     }
 
@@ -1486,8 +1593,13 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/config":
             cfg: dict[str, Any] = {}
             if CONFIG_PATH.exists():
-                with CONFIG_PATH.open("r", encoding="utf-8") as f:
-                    cfg = yaml.safe_load(f) or {}
+                try:
+                    with CONFIG_PATH.open("r", encoding="utf-8") as f:
+                        loaded = yaml.safe_load(f) or {}
+                        if isinstance(loaded, dict):
+                            cfg = loaded
+                except Exception as exc:
+                    cfg = {"_config_error": str(exc), "verticales": {}}
             self._send_json(cfg)
             return
 

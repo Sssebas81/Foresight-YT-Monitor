@@ -95,6 +95,18 @@ def run_with_heartbeat(
                 )
 
 
+def sleep_with_jitter(delay_min: float, delay_max: float) -> None:
+    """Pausa aleatoria acotada para suavizar el ritmo de peticiones hacia YouTube."""
+    low = max(0.0, float(delay_min))
+    high = max(low, float(delay_max))
+    if high <= 0.0:
+        return
+    wait_s = random.uniform(low, high)
+    if wait_s > 0:
+        logger.debug("Pausa anti-bloqueo de %.2fs...", wait_s)
+        time.sleep(wait_s)
+
+
 # ---------------------------------------------------------------------------
 # Excepciones personalizadas y utilidades de resiliencia
 # ---------------------------------------------------------------------------
@@ -227,11 +239,17 @@ class LocalWhisperTranscriber:
         model_size: str = "small",
         device: str = "cpu",
         compute_type: str = "int8",
+        proxy: str | None = None,
+        cookies_file: str | None = None,
+        cookies_from_browser: str | None = None,
     ) -> None:
-        """Configura el modelo y difiere su carga hasta que se necesite transcribir."""
+        """Configura el modelo, opciones de red/sesión y difiere la carga del modelo."""
         self.model_size = model_size
         self.device = device
         self.compute_type = compute_type
+        self.proxy = (proxy or "").strip() or None
+        self.cookies_file = (cookies_file or "").strip() or None
+        self.cookies_from_browser = (cookies_from_browser or "").strip() or None
         self._model: WhisperModel | None = None
 
     def _get_model(self) -> WhisperModel:
@@ -266,21 +284,32 @@ class LocalWhisperTranscriber:
         full_text = " ".join(lines).strip()
         return full_text if full_text else None
 
+    def _build_yt_dlp_cmd(self, out_template: str, video_url: str) -> list[str]:
+        """Construye el comando de yt-dlp incluyendo proxy y cookies si están configurados."""
+        cmd = [
+            sys.executable,
+            "-m",
+            "yt_dlp",
+            "--no-playlist",
+            "-f",
+            "bestaudio[ext=m4a]/bestaudio/best",
+            "-o",
+            out_template,
+        ]
+        if self.proxy:
+            cmd.extend(["--proxy", self.proxy])
+        if self.cookies_file:
+            cmd.extend(["--cookies", self.cookies_file])
+        elif self.cookies_from_browser:
+            cmd.extend(["--cookies-from-browser", self.cookies_from_browser])
+        cmd.append(video_url)
+        return cmd
+
     def transcribe_video(self, video_url: str, video_id: str) -> str | None:
         """Descarga audio directo sin conversión a mp3 y lo transcribe con Whisper."""
         with tempfile.TemporaryDirectory(prefix="yt_whisper_") as tmp_dir:
             out_template = str(Path(tmp_dir) / f"{video_id}.%(ext)s")
-            cmd = [
-                sys.executable,
-                "-m",
-                "yt_dlp",
-                "--no-playlist",
-                "-f",
-                "bestaudio[ext=m4a]/bestaudio/best",
-                "-o",
-                out_template,
-                video_url,
-            ]
+            cmd = self._build_yt_dlp_cmd(out_template=out_template, video_url=video_url)
 
             try:
                 run_with_heartbeat(
@@ -345,10 +374,12 @@ class YouTubeChannelSource(NewsSource):
         max_shorts_seconds: int = 60,
         exclude_live: bool = True,
         max_duration_minutes: int = 15,
+        proxy: str | None = None,
     ) -> None:
-        """Configura el canal, idiomas y filtros de duración, Shorts y transmisiones."""
+        """Configura el canal, idiomas, filtros y proxy opcional."""
         super().__init__(name=name, vertical=vertical, config=config)
         self.api_key = api_key
+        self.proxy = (proxy or "").strip() or None
         self.identifier = str(
             config.get("channel_id") or config.get("handle") or ""
         ).strip()
@@ -370,6 +401,8 @@ class YouTubeChannelSource(NewsSource):
         self.max_duration_minutes = max(0, int(max_duration_minutes))
         self.max_duration_seconds = self.max_duration_minutes * 60
         self.session = requests.Session()
+        if self.proxy:
+            self.session.proxies.update({"http": self.proxy, "https": self.proxy})
 
     def _yt_get(self, endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
         """Realiza una petición GET autenticada a YouTube Data API v3."""
@@ -675,6 +708,23 @@ class YouTubeChannelSource(NewsSource):
 
         return news_items
 
+    def _build_transcript_api_client(self) -> Any:
+        """Instancia YouTubeTranscriptApi aplicando proxy si está configurado."""
+        if not self.proxy:
+            return YouTubeTranscriptApi()
+
+        try:
+            from youtube_transcript_api.proxies import GenericProxyConfig
+
+            return YouTubeTranscriptApi(
+                proxy_config=GenericProxyConfig(
+                    http_url=self.proxy,
+                    https_url=self.proxy,
+                )
+            )
+        except Exception:
+            return YouTubeTranscriptApi()
+
     def extract_content(self, item: NewsItem) -> str | None:
         """
         Extrae los subtítulos del video priorizando español y luego inglés.
@@ -682,9 +732,15 @@ class YouTubeChannelSource(NewsSource):
         """
         try:
             if hasattr(YouTubeTranscriptApi, "list_transcripts"):
-                transcript_list = YouTubeTranscriptApi.list_transcripts(item.item_id)
+                kwargs: dict[str, Any] = {}
+                if self.proxy:
+                    kwargs["proxies"] = {"http": self.proxy, "https": self.proxy}
+                transcript_list = YouTubeTranscriptApi.list_transcripts(
+                    item.item_id, **kwargs
+                )
             else:
-                transcript_list = YouTubeTranscriptApi().list(item.item_id)
+                api_client = self._build_transcript_api_client()
+                transcript_list = api_client.list(item.item_id)
 
             transcript = transcript_list.find_transcript(self.preferred_languages)
             fetched = transcript.fetch()
@@ -825,7 +881,10 @@ class SummaryOutput(BaseModel):
         description="Resumen ejecutivo de 5 a 8 líneas en el idioma solicitado."
     )
     puntos_clave: list[str] = Field(
-        description="Entre 3 y 5 puntos clave concretos con los hechos principales."
+        description=(
+            "Entre 3 y 5 viñetas analíticas diferenciadas del resumen "
+            "(actores/territorios, datos o mecanismos clave, e implicaciones o señales estratégicas)."
+        )
     )
 
 
@@ -1018,14 +1077,24 @@ class HybridSummarizer:
 
     @staticmethod
     def _extractive_fallback(title: str, transcript: str) -> SummaryOutput:
-        """Genera un resumen y puntos clave básicos cuando no hay API LLM disponible."""
+        """Genera síntesis base y viñetas analíticas diferenciadas cuando no hay LLM."""
         sentences = [
             s.strip()
             for s in re.split(r"(?<=[.!?])\s+", re.sub(r"\s+", " ", transcript).strip())
             if len(s.strip()) > 25
         ]
-        resumen = " ".join(sentences[:4]) if sentences else transcript[:500].strip()
-        puntos = sentences[:3] if len(sentences) >= 3 else [f"Tema principal: {title}."]
+        if not sentences:
+            snippet = transcript[:450].strip()
+            return SummaryOutput(
+                resumen=snippet or f"Registro audiovisual sin transcripción completa: {title}.",
+                puntos_clave=[f"Tema central del registro: {title}."],
+            )
+
+        resumen = " ".join(sentences[:4])
+        tail_candidates = sentences[4:] if len(sentences) > 4 else sentences
+        step = max(1, len(tail_candidates) // 3)
+        selected = [tail_candidates[i] for i in range(0, len(tail_candidates), step)][:3]
+        puntos = [f"Lectura en transcripción: {s}" for s in selected]
         return SummaryOutput(resumen=resumen, puntos_clave=puntos[:5])
 
     def _try_gemini(self, prompt: str) -> SummaryOutput:
@@ -1100,7 +1169,7 @@ class HybridSummarizer:
         vertical: str = "general",
         keywords: list[str] | None = None,
     ) -> tuple[str, list[str]]:
-        """Genera el resumen ejecutivo (5-8 líneas) y 3-5 puntos clave enfocados en la vertical."""
+        """Genera el resumen ejecutivo (5-8 líneas) y viñetas analíticas diferenciadas."""
         clean_transcript = self._compact_transcript(transcript, self.max_chars_single_pass)
         focus_line = (
             f"- Vertical de vigilancia: {vertical}\n"
@@ -1110,9 +1179,9 @@ class HybridSummarizer:
         )
 
         final_prompt = f"""
-Actúa como un analista senior de noticias y vigilancia tecnológica / foresight. Analiza la siguiente
-transcripción (obtenida de subtítulos o reconocimiento de voz Whisper) y genera un reporte
-estructurado completamente en {self.target_language}.
+Actúa como un analista senior de vigilancia tecnológica y prospectiva (foresight). Analiza la
+siguiente transcripción (obtenida de subtítulos o reconocimiento de voz Whisper) y genera un
+reporte estructurado completamente en {self.target_language}.
 
 METADATOS Y ENFOQUE:
 - Canal: {channel}
@@ -1121,9 +1190,12 @@ METADATOS Y ENFOQUE:
 REGLAS ESTRICTAS:
 1. "resumen": Redacta un resumen claro, informativo y neutral de entre 5 y 8 líneas
    (aproximadamente 85 a 130 palabras), sin saludos ni frases de relleno como "En este video se habla de...".
-   Si hay keywords de interés, destaca las implicaciones, actores o tendencias vinculadas a ellas.
-2. "puntos_clave": Extrae entre 3 y 5 puntos clave concretos, cada uno de una oración
-   directa con datos, actores, tecnologías o implicaciones estratégicas relevantes.
+   Sintetiza el núcleo del contenido y su relación con la vertical y keywords de interés.
+2. "puntos_clave": NO copies ni repitas frases del "resumen". Entrega entre 3 y 5 viñetas
+   analíticas breves y distintas entre sí que aporten lectura de análisis y foresight:
+   - Actores, territorios, instituciones o tecnologías involucradas.
+   - Datos, cifras, proyectos, prácticas o mecanismos específicos mencionados.
+   - Implicaciones, riesgos, oportunidades o señales tempranas de cambio.
 
 TRANSCRIPCIÓN DEL VIDEO:
 {clean_transcript}
@@ -1335,6 +1407,36 @@ def parse_args() -> argparse.Namespace:
         help="Modelo de faster-whisper en CPU (tiny, base, small, medium).",
     )
     parser.add_argument(
+        "--pausa-min",
+        type=float,
+        default=None,
+        help="Pausa mínima aleatoria en segundos entre videos (por defecto: 1.5 o YT_DELAY_MIN).",
+    )
+    parser.add_argument(
+        "--pausa-max",
+        type=float,
+        default=None,
+        help="Pausa máxima aleatoria en segundos entre videos (por defecto: 3.5 o YT_DELAY_MAX).",
+    )
+    parser.add_argument(
+        "--proxy",
+        type=str,
+        default=None,
+        help="URL de proxy (ej. http://user:pass@host:port) o usar YT_PROXY en .env.",
+    )
+    parser.add_argument(
+        "--cookies",
+        type=Path,
+        default=None,
+        help="Ruta a archivo cookies.txt para yt-dlp o usar YT_COOKIES_FILE en .env.",
+    )
+    parser.add_argument(
+        "--cookies-from-browser",
+        type=str,
+        default=None,
+        help="Navegador para extraer cookies en yt-dlp (ej. chrome, edge) o YT_COOKIES_BROWSER.",
+    )
+    parser.add_argument(
         "--forzar",
         action="store_true",
         help="Ignora el caché SQLite y vuelve a procesar todos los videos encontrados.",
@@ -1470,6 +1572,34 @@ def main() -> None:
         "idiomas_subtitulos", ["es", "es-419", "es-ES", "en", "en-US", "en-GB"]
     )
 
+    pausa_min = (
+        args.pausa_min
+        if args.pausa_min is not None
+        else float(general_cfg.get("pausa_min_segundos", os.getenv("YT_DELAY_MIN", "1.5")))
+    )
+    pausa_max = (
+        args.pausa_max
+        if args.pausa_max is not None
+        else float(general_cfg.get("pausa_max_segundos", os.getenv("YT_DELAY_MAX", "3.5")))
+    )
+    proxy_url = (
+        args.proxy
+        if args.proxy is not None
+        else str(general_cfg.get("proxy", os.getenv("YT_PROXY", ""))).strip()
+    ) or None
+    cookies_file = (
+        str(args.cookies)
+        if args.cookies is not None
+        else str(general_cfg.get("cookies_file", os.getenv("YT_COOKIES_FILE", ""))).strip()
+    ) or None
+    cookies_browser = (
+        args.cookies_from_browser
+        if args.cookies_from_browser is not None
+        else str(
+            general_cfg.get("cookies_from_browser", os.getenv("YT_COOKIES_BROWSER", ""))
+        ).strip()
+    ) or None
+
     cache_path = Path(rutas_cfg.get("cache_db", "cache/youtube_cache.db"))
     transcripts_dir = cache_path.parent / "transcripts"
     transcripts_dir.mkdir(parents=True, exist_ok=True)
@@ -1517,9 +1647,13 @@ def main() -> None:
         model_size=args.whisper_model,
         device="cpu",
         compute_type="int8",
+        proxy=proxy_url,
+        cookies_file=cookies_file,
+        cookies_from_browser=cookies_browser,
     )
     all_results: list[NewsItem] = []
     all_keywords_used: list[str] = []
+    processed_live_count = 0
 
     for src_conf in fuentes_filtradas:
         nombre = str(src_conf.get("nombre", "Fuente sin nombre"))
@@ -1554,6 +1688,7 @@ def main() -> None:
                 max_shorts_seconds=max_shorts_segundos,
                 exclude_live=excluir_en_vivo,
                 max_duration_minutes=max_duracion_minutos,
+                proxy=proxy_url,
             )
             recent_items = source.fetch_recent_items(
                 days=dias,
@@ -1583,6 +1718,10 @@ def main() -> None:
                     logger.info("  [CACHÉ] %s (%s)", item.titulo[:65], item.item_id)
                     all_results.append(cached_item)
                     continue
+
+            if processed_live_count > 0:
+                sleep_with_jitter(pausa_min, pausa_max)
+            processed_live_count += 1
 
             kw_info = (
                 f" | Keywords: {', '.join(item.keywords_coincidentes)}"

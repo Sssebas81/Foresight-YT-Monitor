@@ -2,7 +2,7 @@ general:
   dias_atras: 180
   max_videos_por_canal: 2
   max_duracion_minutos: 20
-  modo_busqueda: "busqueda" # "canales" (ahorra cuota) o "busqueda" (search.list por keyword)
+  modo_busqueda: "canales" # "canales" (ahorra cuota) o "busqueda" (search.list por keyword)
   idioma_resumen: "español"
   excluir_shorts: true
   max_shorts_segundos: 60
@@ -23,6 +23,72 @@ rutas:
   salida_md: "output/resultados.md"
 
 verticales:
+  ia_integridad:
+    descripcion: "Eje 3 Uniquindío: Políticas universitarias de IA, autoría, integridad científica, revistas depredadoras, paper mills, comités de ética y gestión de datos"
+    keywords:
+      es:
+        - "integridad científica"
+        - "ética en la investigación"
+        - "inteligencia artificial investigación"
+        - "política de IA"
+        - "autoría científica"
+        - "revistas depredadoras"
+        - "gestión de datos"
+        - "ética de la investigación"
+        - "ciencia abierta"
+      en:
+        - "research integrity"
+        - "AI in research"
+        - "university AI policy"
+        - "research ethics"
+        - "AI authorship"
+        - "predatory journals"
+        - "paper mills"
+        - "research data management"
+        - "academic integrity"
+    canales_es:
+      - { nombre: "UNESCO IESALC", handle: "@UNESCOIESALC" }
+      - { nombre: "UNESCO en español", handle: "@UNESCOes" }
+      - { nombre: "CLACSO TV", handle: "@CLACSOTV" }
+      - { nombre: "OEI - Organización de Estados Iberoamericanos", handle: "@OEI_" }
+      - { nombre: "OPS / OMS", handle: "@PAHOTV" }
+      - { nombre: "LA Referencia", handle: "@LAReferencia" }
+      - { nombre: "SciELO", handle: "@SciELOOrg" }
+      - { nombre: "Redalyc", handle: "@RedalycOrg" }
+      - { nombre: "Latindex", handle: "@LatindexOficial" }
+      - { nombre: "FECYT Ciencia", handle: "@FECYTciencia" }
+      - { nombre: "CSIC Comunicación", handle: "@CSICcomunicacion" }
+      - { nombre: "CONAHCYT México", handle: "@ConahcytMex" }
+      - { nombre: "ANID Chile", handle: "@ANIDChile" }
+      - { nombre: "Minciencias Colombia", handle: "@MincienciasCo" }
+      - { nombre: "MinEducación Colombia", handle: "@MinEducacionCol" }
+      - { nombre: "ASCUN Colombia", handle: "@ASCUNColombia" }
+      - { nombre: "Universidad Nacional de Colombia", handle: "@UNALOficial" }
+      - { nombre: "Universidad de Antioquia", handle: "@udea" }
+      - { nombre: "Universidad del Valle", handle: "@univallecol" }
+      - { nombre: "UNAM Global TV", handle: "@UNAMGlobalTV" }
+    canales_en:
+      - { nombre: "COPE - Committee on Publication Ethics", handle: "@COPE_ethics" }
+      - { nombre: "UK Research Integrity Office (UKRIO)", handle: "@UKRIO" }
+      - { nombre: "Center for Open Science", handle: "@CenterForOpenScience" }
+      - { nombre: "World Conferences on Research Integrity", handle: "@WCRIFoundation" }
+      - { nombre: "ORCID", handle: "@ORCID_Org" }
+      - { nombre: "Crossref", handle: "@CrossrefOrg" }
+      - { nombre: "DOAJ - Directory of Open Access Journals", handle: "@DOAJplus" }
+      - { nombre: "Nature", handle: "@nature" }
+      - { nombre: "Science Magazine", handle: "@ScienceMagazine" }
+      - { nombre: "Times Higher Education", handle: "@TimesHigherEd" }
+      - { nombre: "Inside Higher Ed", handle: "@InsideHigherEd" }
+      - { nombre: "Science|Business", handle: "@ScienceBusiness" }
+      - { nombre: "The Chronicle of Higher Education", handle: "@ChronicleHigherEd" }
+      - { nombre: "OECD", handle: "@OECD" }
+      - { nombre: "UNESCO", handle: "@unesco" }
+      - { nombre: "European Research Council (ERC)", handle: "@EuropeanResearchCouncil" }
+      - { nombre: "UKRI - UK Research and Innovation", handle: "@UKRI" }
+      - { nombre: "National Academies of Sciences", handle: "@theNASEM" }
+      - { nombre: "Stanford HAI (Human-Centered AI)", handle: "@StanfordHAI" }
+      - { nombre: "The Alan Turing Institute", handle: "@turinginst" }
+
   territorio_sostenibilidad:
     descripcion: "Territorio y sostenibilidad en el Eje Cafetero, Quindío, Armenia y los Andes colombianos (agua, café, clima, biodiversidad y ordenamiento)"
     keywords:

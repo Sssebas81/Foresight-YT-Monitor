@@ -3,19 +3,24 @@
 Interfaz visual local para INNLAB Foresight · Universidad Icesi.
 Panel de control ampliado en http://127.0.0.1:8765 con identidad visual
 Universidad Icesi + INNLAB Centro de Innovación, filtros por vertical,
-ejes a medida (ej. Universidad del Quindío), keywords bilingües y ejecución
-en vivo de youtube_news.py + Whisper + render_youtube_scancards.py.
+ejes a medida (ej. Universidad del Quindío), keywords bilingües, ejecución
+en vivo de youtube_news.py + Whisper + render_youtube_scancards.py y
+exportación a CSV homologado + PDFs individuales por ID (.ZIP).
 """
 
 from __future__ import annotations
 
+import io
 import json
 import mimetypes
 import os
+import re
 import subprocess
 import sys
 import threading
 import webbrowser
+import zipfile
+from html import unescape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -23,7 +28,18 @@ from urllib.parse import urlparse
 
 import yaml
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Detecta BASE_DIR tanto si app_foresight.py está en src/ como en la raíz
+_HERE = Path(__file__).resolve().parent
+BASE_DIR = _HERE.parent if _HERE.name == "src" else _HERE
+SRC_DIR = BASE_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+try:
+    from exportador_foresight import exportar_scancards_a_csv_y_pdfs
+except ImportError:
+    exportar_scancards_a_csv_y_pdfs = None  # type: ignore
+
 CONFIG_PATH = BASE_DIR / "config.yaml"
 YOUTUBE_SCRIPT = BASE_DIR / "src" / "youtube_news.py"
 RENDER_SCRIPT = BASE_DIR / "src" / "render_youtube_scancards.py"
@@ -36,7 +52,6 @@ HTML_OUT = OUTPUT_DIR / "reporte_foresight.html"
 HOST = "127.0.0.1"
 PORT = 8765
 
-# Valores iniciales recomendados para evitar bloqueos y tiempos excesivos con Whisper
 DEFAULT_UI_PARAMS = {
     "idioma": "todos",
     "modo": "canales",
@@ -67,7 +82,7 @@ def _find_asset(candidates: list[str]) -> Path | None:
 
 
 def _count_scancards(json_path: Path) -> int | None:
-    """Cuenta cuántas ScanCards hay en el JSON generado por render_youtube_scancards.py."""
+    """Cuenta cuántos registros hay en un JSON generado."""
     if not json_path.exists():
         return None
     try:
@@ -75,7 +90,7 @@ def _count_scancards(json_path: Path) -> int | None:
         if isinstance(data, list):
             return len(data)
         if isinstance(data, dict):
-            for key in ("cards", "scancards", "items", "resultados"):
+            for key in ("resultados", "cards", "scancards", "items"):
                 if isinstance(data.get(key), list):
                     return len(data[key])
     except Exception:
@@ -83,40 +98,95 @@ def _count_scancards(json_path: Path) -> int | None:
     return None
 
 
+def _load_config_safe() -> dict[str, Any]:
+    """Carga config.yaml de forma tolerante y reporta diagnóstico claro si falla."""
+    if not CONFIG_PATH.exists():
+        return {"_config_error": f"No se encontró config.yaml en {CONFIG_PATH}", "verticales": {}}
+    try:
+        raw_text = CONFIG_PATH.read_text(encoding="utf-8")
+        loaded = yaml.safe_load(raw_text) or {}
+        if not isinstance(loaded, dict):
+            return {"_config_error": "config.yaml no tiene un objeto raíz válido.", "verticales": {}}
+        if not isinstance(loaded.get("verticales"), dict):
+            loaded["verticales"] = {}
+        return loaded
+    except Exception as exc:
+        return {"_config_error": f"Error leyendo config.yaml: {exc}", "verticales": {}}
+
+
+def _extract_cards_from_html_fallback(html_path: Path) -> list[dict[str, Any]]:
+    """Extrae ScanCards desde reporte_foresight.html si no existen JSON en output/."""
+    if not html_path.exists():
+        return []
+    text = html_path.read_text(encoding="utf-8")
+    articles = re.findall(r'<article class="scancard">(.*?)</article>', text, flags=re.S)
+    results: list[dict[str, Any]] = []
+
+    def _grab(block: str, pattern: str) -> str:
+        m = re.search(pattern, block, flags=re.S)
+        if not m:
+            return ""
+        cleaned = re.sub(r"<[^>]+>", " ", m.group(1))
+        return re.sub(r"\s+", " ", unescape(cleaned)).strip()
+
+    for idx, art in enumerate(articles, start=1):
+        m_url = re.search(r'class="scancard-title"[^>]*>.*?href="([^"]+)"', art, flags=re.S)
+        bullets = [
+            re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", b))).strip()
+            for b in re.findall(r"<li>(.*?)</li>", art, flags=re.S)
+        ]
+        resumen = _grab(art, r'class="scancard-summary"[^>]*>(.*?)</p>')
+        results.append({
+            "id": _grab(art, r'class="scancard-id"[^>]*>(.*?)</span>') or f"YT-{idx:03d}",
+            "titulo": _grab(art, r'class="scancard-title"[^>]*>.*?<a[^>]*>(.*?)</a>'),
+            "canal": _grab(art, r'class="badge-channel"[^>]*>(.*?)</span>'),
+            "vertical": _grab(art, r'class="badge-vertical"[^>]*>(.*?)</span>'),
+            "fecha_publicacion": _grab(art, r"<time[^>]*>(.*?)</time>"),
+            "duracion": _grab(art, r'class="scancard-duration"[^>]*>(.*?)</span>'),
+            "url": m_url.group(1).strip() if m_url else "",
+            "resumen": resumen,
+            "puntos_clave": bullets,
+            "transcripcion": "",
+        })
+    return results
+
+
 class JobManager:
     """Gestiona la ejecución secuencial de youtube_news.py y render_youtube_scancards.py."""
 
     def __init__(self) -> None:
-        """Inicializa el estado compartido y detecta si ya existe un reporte utilizable."""
         self.lock = threading.Lock()
         self.running = False
         self.logs: list[str] = []
         self.last_exit_code: int | None = None
         self.last_command: str = ""
-        self.report_ready = HTML_OUT.exists() and ((_count_scancards(SCANCARDS_JSON_OUT) or 0) > 0)
+        self.last_keywords: list[str] = []
+        self.report_ready = HTML_OUT.exists() and (
+            ((_count_scancards(SCANCARDS_JSON_OUT) or 0) > 0)
+            or ((_count_scancards(JSON_OUT) or 0) > 0)
+            or len(_extract_cards_from_html_fallback(HTML_OUT)) > 0
+        )
 
     def start(self, params: dict[str, Any]) -> tuple[bool, str]:
-        """Inicia el pipeline en segundo plano si no hay otro trabajo activo."""
         with self.lock:
             if self.running:
                 return False, "Ya hay una ejecución en curso. Espera a que finalice."
             self.running = True
             self.logs = []
             self.last_exit_code = None
+            self.last_keywords = [str(k).strip() for k in (params.get("keywords") or []) if str(k).strip()]
 
         thread = threading.Thread(target=self._run_pipeline, args=(params,), daemon=True)
         thread.start()
         return True, "Ejecución iniciada."
 
     def _append_log(self, line: str) -> None:
-        """Añade una línea al historial compartido, conservando solo las 600 más recientes."""
         with self.lock:
             self.logs.append(line.rstrip("\r\n"))
             if len(self.logs) > 600:
                 self.logs = self.logs[-600:]
 
     def _run_pipeline(self, params: dict[str, Any]) -> None:
-        """Ejecuta el monitor y, si termina bien, genera el reporte HTML y actualiza el estado."""
         try:
             cmd = [sys.executable, str(YOUTUBE_SCRIPT), "--config", str(CONFIG_PATH)]
 
@@ -294,7 +364,6 @@ HTML_UI = r"""<!DOCTYPE html>
     }
 
     *, *::before, *::after { box-sizing: border-box; }
-
     html { font-size: 16px; }
 
     body {
@@ -818,6 +887,25 @@ HTML_UI = r"""<!DOCTYPE html>
       gap: 12px;
       flex-wrap: wrap;
     }
+
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(22, 26, 43, 0.55);
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      padding: 20px;
+    }
+    .modal-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 480px;
+      width: 100%;
+      padding: 26px;
+    }
   </style>
 </head>
 <body>
@@ -1087,12 +1175,15 @@ HTML_UI = r"""<!DOCTYPE html>
   <section id="scancardsFooter" class="scancards-footer">
     <div class="scancards-footer-bar">
       <div>
-        <h2 class="scancards-footer-title">ScanCards y exportación en PDF</h2>
+        <h2 class="scancards-footer-title">ScanCards y exportación (CSV + PDFs por ID)</h2>
         <p id="scancardsFooterStatus" class="scancards-footer-sub">
-          Ejecuta el radar para habilitar la vista de ScanCards y la descarga en PDF.
+          Ejecuta el radar o exporta los resultados guardados en CSV homologado + PDFs individuales.
         </p>
       </div>
       <div class="scancards-footer-actions">
+        <button type="button" id="exportCsvZipBtn" class="btn btn-primary">
+          Exportar CSV + PDFs (.ZIP) ⭳
+        </button>
         <a id="openReportBtn" href="/reporte" target="_blank" rel="noopener" class="btn btn-success disabled">
           Abrir ScanCards HTML ↗
         </a>
@@ -1102,6 +1193,24 @@ HTML_UI = r"""<!DOCTYPE html>
       </div>
     </div>
   </section>
+
+  <div id="exportModal" class="modal-backdrop">
+    <div class="modal-card">
+      <h3 style="margin:0 0 8px; color:var(--icesi-navy);">Secuencia de IDs para CSV y PDFs</h3>
+      <p style="margin:0 0 14px; font-size:14px; color:var(--muted);">
+        Indica cuál fue el <strong>último ID</strong> en tu CSV base para continuar automáticamente desde el siguiente (por ejemplo, si escribes <code>REC-0179</code>, la exportación iniciará en <code>REC-0180</code>).
+      </p>
+      <div class="field" style="margin-bottom:18px;">
+        <label for="ultimoIdInput">Último ID existente en el CSV</label>
+        <input type="text" id="ultimoIdInput" value="REC-0179" placeholder="Ej. REC-0179" />
+        <span class="field-hint">Cada fila del CSV tendrá su propio archivo <code><ID>.pdf</code> con la transcripción literal completa.</span>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" id="cancelExportBtn" class="btn btn-secondary">Cancelar</button>
+        <button type="button" id="confirmExportBtn" class="btn btn-primary">Generar y descargar .ZIP</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const RECOMMENDED_DEFAULTS = {
@@ -1151,11 +1260,12 @@ HTML_UI = r"""<!DOCTYPE html>
     ];
 
     let appConfig = { verticales: {} };
-    let selectedVertical = "fintech";
+    let selectedVertical = "territorio_sostenibilidad";
     let currentKeywords = [];
     let pollTimer = null;
 
     const LABELS = {
+      territorio_sostenibilidad: "Territorio y Sostenibilidad",
       fintech: "Fintech",
       tecnologia: "Tecnología",
       agrotech: "Agrotech",
@@ -1200,7 +1310,9 @@ HTML_UI = r"""<!DOCTYPE html>
 
       if (!vertEntries.length) {
         warn.style.display = "block";
-        warn.textContent = "No se detectaron verticales en config.yaml (o el archivo no existe/tiene un error de sintaxis). Revisa config.yaml o usa 'Foresight a medida (Libre)'.";
+        warn.textContent = appConfig._config_error
+          ? appConfig._config_error
+          : "No se detectaron verticales en config.yaml. Revisa el archivo o usa 'Foresight a medida (Libre)'.";
       } else {
         warn.style.display = "none";
       }
@@ -1405,8 +1517,8 @@ HTML_UI = r"""<!DOCTYPE html>
         pdfBtn.classList.toggle("disabled", !data.report_ready);
         if (footerStatus) {
           footerStatus.textContent = data.report_ready
-            ? "ScanCards listas. Abre el reporte HTML o descarga el PDF desde aquí."
-            : "Ejecuta el radar para habilitar la vista de ScanCards y la descarga en PDF.";
+            ? "ScanCards listas. Exporta CSV + PDFs por ID (.ZIP), abre el reporte HTML o descarga el PDF."
+            : "Ejecuta el radar o exporta los resultados guardados en output/ como CSV + PDFs por ID.";
         }
 
         if (data.running) {
@@ -1473,7 +1585,7 @@ HTML_UI = r"""<!DOCTYPE html>
         appConfig = { verticales: {} };
       }
 
-      const firstKey = Object.keys(appConfig.verticales)[0] || "fintech";
+      const firstKey = Object.keys(appConfig.verticales)[0] || "territorio_sostenibilidad";
       applyRecommendedDefaults(firstKey);
       selectVertical(firstKey);
       pollStatus();
@@ -1515,6 +1627,59 @@ HTML_UI = r"""<!DOCTYPE html>
         document.getElementById(id).addEventListener("input", updateCommandPreview);
       });
       document.getElementById("runBtn").onclick = startExecution;
+
+      const modal = document.getElementById("exportModal");
+      document.getElementById("exportCsvZipBtn").onclick = () => {
+        modal.style.display = "flex";
+        document.getElementById("ultimoIdInput").focus();
+        document.getElementById("ultimoIdInput").select();
+      };
+      document.getElementById("cancelExportBtn").onclick = () => {
+        modal.style.display = "none";
+      };
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) modal.style.display = "none";
+      });
+      document.getElementById("confirmExportBtn").onclick = async () => {
+        const ultimoId = document.getElementById("ultimoIdInput").value.trim();
+        if (!ultimoId) {
+          alert("Escribe el último ID del CSV (por ejemplo REC-0179).");
+          return;
+        }
+        const confirmBtn = document.getElementById("confirmExportBtn");
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Generando...";
+        try {
+          const res = await fetch("/api/export-zip", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ultimo_id: ultimoId,
+              keywords: currentKeywords
+            })
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            alert(errData.message || "No se pudo generar la exportación.");
+            return;
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "foresight_csv_pdfs.zip";
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          modal.style.display = "none";
+        } catch (err) {
+          alert("Error de conexión al exportar el paquete ZIP.");
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = "Generar y descargar .ZIP";
+        }
+      };
     }
 
     init();
@@ -1531,11 +1696,9 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
     INNLAB_CANDIDATES = ["logo_innlab.png", "logo_innlab.svg", "innlab.png", "innlab.svg"]
 
     def log_message(self, format: str, *args: Any) -> None:
-        """Desactiva el registro HTTP estándar para mantener limpia la consola del panel."""
         pass
 
     def _send_json(self, payload: Any, status: int = 200) -> None:
-        """Envía un objeto serializado como JSON UTF-8 con el código HTTP indicado."""
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -1544,7 +1707,6 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def _send_html(self, html_text: str, status: int = 200) -> None:
-        """Envía una página HTML UTF-8 con el código HTTP indicado."""
         raw = html_text.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -1553,7 +1715,6 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def _send_file(self, path: Path) -> None:
-        """Entrega un recurso local, determinando su tipo MIME a partir de la ruta."""
         mime, _ = mimetypes.guess_type(str(path))
         raw = path.read_bytes()
         self.send_response(200)
@@ -1563,7 +1724,6 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_GET(self) -> None:
-        """Atiende la página principal, configuración, estado, logos y reporte."""
         parsed = urlparse(self.path)
         if parsed.path == "/":
             self._send_html(HTML_UI)
@@ -1591,27 +1751,22 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
                 return
 
         if parsed.path == "/api/config":
-            cfg: dict[str, Any] = {}
-            if CONFIG_PATH.exists():
-                try:
-                    with CONFIG_PATH.open("r", encoding="utf-8") as f:
-                        loaded = yaml.safe_load(f) or {}
-                        if isinstance(loaded, dict):
-                            cfg = loaded
-                except Exception as exc:
-                    cfg = {"_config_error": str(exc), "verticales": {}}
-            self._send_json(cfg)
+            self._send_json(_load_config_safe())
             return
 
         if parsed.path == "/api/status":
             with JOBS.lock:
-                has_cards = (_count_scancards(SCANCARDS_JSON_OUT) or 0) > 0
+                has_cards = (
+                    ((_count_scancards(SCANCARDS_JSON_OUT) or 0) > 0)
+                    or ((_count_scancards(JSON_OUT) or 0) > 0)
+                    or (len(_extract_cards_from_html_fallback(HTML_OUT)) > 0)
+                )
                 self._send_json(
                     {
                         "running": JOBS.running,
                         "logs": JOBS.logs,
                         "last_exit_code": JOBS.last_exit_code,
-                        "report_ready": JOBS.report_ready and HTML_OUT.exists() and has_cards,
+                        "report_ready": HTML_OUT.exists() and has_cards,
                     }
                 )
             return
@@ -1638,14 +1793,20 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
 
         self._send_json({"error": "Ruta no encontrada"}, status=404)
 
+    def _read_body_json(self) -> dict[str, Any]:
+        try:
+            length = int(self.headers.get("Content-Length") or "0")
+        except ValueError:
+            length = 0
+        raw = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+
     def do_POST(self) -> None:
-        """Valida las solicitudes para iniciar el pipeline desde la interfaz web."""
         parsed = urlparse(self.path)
         if parsed.path == "/api/run":
-            length = int(self.headers.get("Content-Length", "0"))
-            body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
             try:
-                params = json.loads(body)
+                params = self._read_body_json()
             except json.JSONDecodeError:
                 self._send_json({"message": "JSON inválido."}, status=400)
                 return
@@ -1654,14 +1815,94 @@ class ForesightRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"message": msg}, status=200 if started else 409)
             return
 
+        if parsed.path == "/api/export-zip":
+            if exportar_scancards_a_csv_y_pdfs is None:
+                self._send_json(
+                    {"message": "No se encontró src/exportador_foresight.py."},
+                    status=500,
+                )
+                return
+
+            # Prioriza resultados.json porque contiene la transcripción literal cruda de Whisper
+            fuente_json: Path | None = None
+            if JSON_OUT.exists() and (_count_scancards(JSON_OUT) or 0) > 0:
+                fuente_json = JSON_OUT
+            elif SCANCARDS_JSON_OUT.exists() and (_count_scancards(SCANCARDS_JSON_OUT) or 0) > 0:
+                fuente_json = SCANCARDS_JSON_OUT
+            elif HTML_OUT.exists():
+                cards_html = _extract_cards_from_html_fallback(HTML_OUT)
+                if cards_html:
+                    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                    fallback_json = OUTPUT_DIR / "_fallback_from_html.json"
+                    fallback_json.write_text(json.dumps(cards_html, ensure_ascii=False, indent=2), encoding="utf-8")
+                    fuente_json = fallback_json
+
+            if fuente_json is None:
+                self._send_json(
+                    {"message": "No hay resultados guardados en output/ para exportar."},
+                    status=400,
+                )
+                return
+
+            try:
+                payload = self._read_body_json()
+            except json.JSONDecodeError:
+                self._send_json({"message": "JSON inválido."}, status=400)
+                return
+
+            ultimo_id = str(payload.get("ultimo_id") or "").strip() or None
+            id_inicio = str(payload.get("id_inicio") or "").strip() or None
+            keywords_filtro = payload.get("keywords")
+            if not isinstance(keywords_filtro, list) or not keywords_filtro:
+                keywords_filtro = JOBS.last_keywords
+
+            try:
+                resumen = exportar_scancards_a_csv_y_pdfs(
+                    json_path=fuente_json,
+                    csv_out=OUTPUT_DIR / "scancards_uniquindio_export.csv",
+                    pdf_dir=OUTPUT_DIR / "pdfs_transcripciones",
+                    id_inicio=id_inicio,
+                    ultimo_id=ultimo_id,
+                    keywords_filtro=keywords_filtro,
+                    interactivo=False,
+                )
+            except Exception as exc:
+                self._send_json({"message": f"Error al exportar: {exc}"}, status=400)
+                return
+
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+                csv_path = Path(resumen["csv_path"])
+                if csv_path.exists():
+                    zf.write(csv_path, arcname=csv_path.name)
+                for pdf_str in resumen.get("pdfs_generados", []):
+                    pdf_path = Path(pdf_str)
+                    if pdf_path.exists():
+                        zf.write(pdf_path, arcname=f"pdfs/{pdf_path.name}")
+            zip_bytes = buf.getvalue()
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/zip")
+            self.send_header("Content-Disposition", 'attachment; filename="foresight_csv_pdfs.zip"')
+            self.send_header("Content-Length", str(len(zip_bytes)))
+            self.end_headers()
+            self.wfile.write(zip_bytes)
+            return
+
         self._send_json({"error": "Ruta no encontrada"}, status=404)
 
 
 def main() -> None:
-    """Inicia el servidor local del panel y abre la interfaz en el navegador."""
+    cfg = _load_config_safe()
+    verts = list((cfg.get("verticales") or {}).keys())
     server = ThreadingHTTPServer((HOST, PORT), ForesightRequestHandler)
     url = f"http://{HOST}:{PORT}"
     print(f"Panel visual INNLAB Foresight · Universidad Icesi activo en: {url}")
+    print(f"Configuración cargada desde: {CONFIG_PATH}")
+    if cfg.get("_config_error"):
+        print(f"⚠ {cfg['_config_error']}")
+    else:
+        print(f"Verticales detectadas ({len(verts)}): {', '.join(verts)}")
     print("Presiona Ctrl+C para detener el servidor.")
     threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     try:

@@ -1,7 +1,7 @@
 general:
   dias_atras: 180
   max_videos_por_canal: 2
-  max_duracion_minutos: 20
+  max_duracion_minutos: 30
   modo_busqueda: "canales" # "canales" (ahorra cuota) o "busqueda" (search.list por keyword)
   idioma_resumen: "español"
   excluir_shorts: true
@@ -23,6 +23,74 @@ rutas:
   salida_md: "output/resultados.md"
 
 verticales:
+  talento_carrera:
+    descripcion: "Eje 5 Uniquindío: Incentivos, carga académica, descarga horaria, vinculación docente, relevo generacional, jóvenes investigadores y formación doctoral"
+    keywords:
+      es:
+        - "investigación"
+        - "universidad"
+        - "docentes"
+        - "doctorado"
+        - "posgrado"
+        - "becas"
+        - "investigadores"
+        - "ciencia"
+        - "convocatoria"
+        - "carrera"
+      en:
+        - "research"
+        - "university"
+        - "faculty"
+        - "doctoral"
+        - "phd"
+        - "researchers"
+        - "career"
+        - "funding"
+        - "grants"
+        - "academia"
+    canales_es:
+      - { nombre: "Minciencias Colombia", handle: "@MincienciasCo" }
+      - { nombre: "MinEducación Colombia", handle: "@MinEducacionCol" }
+      - { nombre: "ASCUN Colombia", handle: "@ASCUNColombia" }
+      - { nombre: "AUIP - Asociación Universitaria Iberoamericana de Postgrado", handle: "@AUIP_org" }
+      - { nombre: "UNESCO IESALC", handle: "@UNESCOIESALC" }
+      - { nombre: "OEI - Organización de Estados Iberoamericanos", handle: "@OEI_" }
+      - { nombre: "CLACSO TV", handle: "@CLACSOTV" }
+      - { nombre: "Fundación Carolina", handle: "@FundacionCarolina" }
+      - { nombre: "ICETEX Colombia", handle: "@ICETEXColombia" }
+      - { nombre: "Universidad Nacional de Colombia", handle: "@UNALOficial" }
+      - { nombre: "Universidad de Antioquia", handle: "@udea" }
+      - { nombre: "Universidad del Valle", handle: "@univallecol" }
+      - { nombre: "UTP Pereira", handle: "@UTPereira" }
+      - { nombre: "Universidad de Caldas", handle: "@universidadcaldas" }
+      - { nombre: "Universidad del Quindío", handle: "@uniquindio" }
+      - { nombre: "UNAM Global TV", handle: "@UNAMGlobalTV" }
+      - { nombre: "TEC de Monterrey", handle: "@tecdemonterrey" }
+      - { nombre: "CONAHCYT México", handle: "@ConahcytMex" }
+      - { nombre: "ANID Chile", handle: "@ANIDChile" }
+      - { nombre: "FECYT Ciencia", handle: "@FECYTciencia" }
+    canales_en:
+      - { nombre: "Times Higher Education", handle: "@TimesHigherEd" }
+      - { nombre: "Inside Higher Ed", handle: "@InsideHigherEd" }
+      - { nombre: "The Chronicle of Higher Education", handle: "@ChronicleHigherEd" }
+      - { nombre: "Nature", handle: "@nature" }
+      - { nombre: "Science Magazine", handle: "@ScienceMagazine" }
+      - { nombre: "Science|Business", handle: "@ScienceBusiness" }
+      - { nombre: "OECD", handle: "@OECD" }
+      - { nombre: "UNESCO", handle: "@unesco" }
+      - { nombre: "European Research Council (ERC)", handle: "@EuropeanResearchCouncil" }
+      - { nombre: "Marie Skłodowska-Curie Actions", handle: "@MSCActions" }
+      - { nombre: "UKRI - UK Research and Innovation", handle: "@UKRI" }
+      - { nombre: "Wellcome Trust", handle: "@wellcometrust" }
+      - { nombre: "Howard Hughes Medical Institute (HHMI)", handle: "@hhmi" }
+      - { nombre: "National Academies of Sciences", handle: "@theNASEM" }
+      - { nombre: "American Council on Education (ACE)", handle: "@ACEducation" }
+      - { nombre: "AAUP - American Association of University Professors", handle: "@AAUP" }
+      - { nombre: "Vitae Researcher Development", handle: "@Vitae_news" }
+      - { nombre: "EURAXESS", handle: "@EURAXESS" }
+      - { nombre: "Global Young Academy", handle: "@GlobalYoungAcademy" }
+      - { nombre: "University of Oxford", handle: "@OxfordUniversity" }
+
   ia_integridad:
     descripcion: "Eje 3 Uniquindío: Políticas universitarias de IA, autoría, integridad científica, revistas depredadoras, paper mills, comités de ética y gestión de datos"
     keywords:
